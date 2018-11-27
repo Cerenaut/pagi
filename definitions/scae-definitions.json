@@ -1,0 +1,74 @@
+{
+  "experiment-options": {
+    "workflow": "workflows.workflow",
+    "dataset": "datasets.mnist_dataset",
+    "component": "components.sparse_conv_autoencoder_component",
+    "dataset_location": "data",
+
+    "logging": "info",
+    "checkpoint": null,
+    "checkpoint_load_scope": null,
+    "checkpoint_frozen_scope": null,
+    "summary_dir": null,
+
+    "seed": 42,
+    "batches": 10,
+    "experiment_id": null,
+
+    "evaluate": false,
+    "summarize": true,
+    "track": false,
+
+    "hparams_override": {
+      "batch_size": 100,
+      "nonlinearity": "relu",
+      "filters": 64,
+      "filters_field_width": 6,
+      "filters_field_height": 6,
+      "filters_field_stride": 3,
+      "sparsity": 5
+    }
+  },
+  "export-options": {
+    "export_filters": true,
+    "export_checkpoint": true,
+    "interval_batches": 10
+  },
+  "workflow-options": {
+    "train_classes": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "test_classes": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  },
+  "classifier-options": {
+    "model": "logistic",
+    "unit_range": false,
+    "interval_batches": 1000,
+    "hparams": {
+      "logistic": {
+        "C": [0.01, 0.1, 1.0, 10.0]
+      },
+      "svm": {
+        "C": [1.0, 10.0, 100.0]
+      }
+    }
+  },
+  "parameter-sweeps": {
+    "hparams": [
+      {
+        "batch_size": 100,
+        "learning_rate": 0.001
+      },
+      {
+        "batch_size": 100,
+        "learning_rate": 0.002
+      }
+    ],
+    "workflow-options": [
+      {
+        "train_classes": [0, 1, 2, 3, 4]
+      },
+      {
+        "train_classes": [0, 1, 2, 3, 4]
+      }
+    ]
+  }
+}
