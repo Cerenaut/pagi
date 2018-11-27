@@ -55,7 +55,7 @@ TODO:
 ### Contributing
 We encourage people to build and experiment with `pagi-framework`. We are happy to receive pull requests to continue to improve and expand the codebase.
 
-Our Style Guide can be found at here at [./documentation/style-guide](./documentation/style-guide/README.md)
+Our Style Guide can be found here at [./documentation/style-guide](./documentation/style-guide/README.md)
 
 ### Testing
 Unit tests can be executed in multiple ways:
