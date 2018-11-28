@@ -300,7 +300,8 @@ class Workflow(object):
 
         # evaluation: every N steps, test the encoding model
         if evaluate:
-          if (batch + 1) % self._eval_opts['interval_batches'] == 0:  # defaults to once per batches
+          # defaults to once per batches, and ensure at least once at the end
+          if (batch == num_batches-1) or ((batch + 1) % self._eval_opts['interval_batches'] == 0):
             self.helper_evaluate(batch)
     elif evaluate:  # train is False
       self.helper_evaluate(0)
