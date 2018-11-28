@@ -15,10 +15,10 @@ The codebase:
 - Default Workflow runs unsupervised component then tests with a classifier
 
 ## Prerequisites
-- TensorFlow environment 1.10+
+- TensorFlow 1.10+
 - Python 3+
 
-We recommend using [Anaconda](https://www.anaconda.com/) to setup a python3.6/Tensorflow environment for development.
+We recommend using [Anaconda](https://www.anaconda.com/) to setup a Python 3.6 / TensorFlow environment for development.
 
 ## Installation
 Check out the repository [pagi-framework](https://github.com/ProjectAGI/pagi-framework)
