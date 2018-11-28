@@ -40,8 +40,8 @@ class AutoencoderComponentTest(tf.test.TestCase):
                                 (self.hparams_override["batch_size"], 784))
     self.toy_input_shape = [self.hparams_override["batch_size"], 28, 28, 1]
 
-  def test_get_training_op(self):
-    """Tests the training operation."""
+  def test_training_basic(self):
+    """Tests the training operation and intended variables are trainable."""
     with tf.Graph().as_default():
       toy_input_tensor = tf.constant(self.toy_input, dtype=tf.float32)
 
@@ -57,33 +57,20 @@ class AutoencoderComponentTest(tf.test.TestCase):
         trainable_vars = tf.get_collection(
             tf.GraphKeys.TRAINABLE_VARIABLES)
 
-        train_op = component._dual.get_op('training')
-        train_value = sess.run(train_op, feed_dict={})
+        batch_type = 'training'
 
-        self.assertEqual(train_value, None)
-        self.assertEqual(len(trainable_vars), 3)
+        fetches = {}
+        component.add_fetches(fetches, batch_type)
 
-  def test_get_loss_op(self):
-    """Tests the loss operation."""
-    with tf.Graph().as_default():
-      toy_input_tensor = tf.constant(self.toy_input, dtype=tf.float32)
+        feed_dict = {}
+        component.update_feed_dict(feed_dict, batch_type)
 
-      hparams = AutoencoderComponent.default_hparams()
-      hparams.override_from_dict(self.hparams_override)
+        fetched = sess.run(fetches, feed_dict)
 
-      component = AutoencoderComponent()
-      component.build(toy_input_tensor, self.toy_input_shape, hparams)
+        component.set_fetches(fetched, batch_type)
+        loss = component._dual.get_op('loss')
 
-      with self.test_session() as sess:
-        sess.run(tf.global_variables_initializer())
-
-        trainable_vars = tf.get_collection(
-            tf.GraphKeys.TRAINABLE_VARIABLES)
-
-        loss_op = component.get_loss()
-        loss_value = sess.run(loss_op, feed_dict={})
-
-        self.assertEqual(loss_value.get_shape(), ())
+        self.assertEqual(loss.get_shape(), ())
         self.assertEqual(len(trainable_vars), 3)
 
 
