@@ -1,7 +1,7 @@
 {
   "experiment-options": {
     "workflow": "workflows.workflow",
-    "dataset": "datasets.mnist_dataset",
+    "dataset": "datasets.omniglot_dataset",
     "component": "components.sparse_conv_autoencoder_component",
     "dataset_location": "data",
 
@@ -15,7 +15,7 @@
     "batches": 10,
     "experiment_id": null,
 
-    "evaluate": false,
+    "evaluate": true,
     "summarize": true,
     "track": false,
 
@@ -35,13 +35,13 @@
     "interval_batches": 10
   },
   "workflow-options": {
-    "train_classes": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-    "test_classes": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    "train_classes": ["Arcadian", "Armenian"],
+    "test_classes": ["Arcadian", "Armenian"]
   },
   "classifier-options": {
     "model": "logistic",
     "unit_range": false,
-    "interval_batches": 1000,
+    "interval_batches": 10,
     "hparams": {
       "logistic": {
         "C": [0.01, 0.1, 1.0, 10.0]

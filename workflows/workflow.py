@@ -39,8 +39,8 @@ class Workflow(object):
   def default_opts():
     """Builds an HParam object with default workflow options."""
     return tf.contrib.training.HParams(
-        train_classes=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        test_classes=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        train_classes=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+        test_classes=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
         evaluate=True,
         train=True
     )
