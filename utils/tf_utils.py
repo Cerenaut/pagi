@@ -28,6 +28,23 @@ def tf_invert(feature, label):
   return inverted, label
 
 
+def tf_set_min(source, label, tgt_min, current_min=0):
+  """
+  For an input tensor with `current_min` as the minimum value, set a new minimum.
+  **WARNING**: tgt_min CANNOT be zero, or it will not work
+  """
+
+  source = tf_print(source, message="source: ", summarize=280, mute=True)
+
+  source_zeros = tf.to_float(tf.equal(source, current_min))   # 1.0(True) where =curr_min, 0.(False) where !=curr_min
+  minvals_inplace = tgt_min * source_zeros
+  target = source + minvals_inplace
+
+  target = tf_print(target, message="target: ", summarize=280, mute=True)
+
+  return target, label
+
+
 def tf_label_filter(feature, label, label_list):  # pylint: disable=W0613
   keep_labels = tf.constant(label_list)
   tile_multiples = tf.concat([
@@ -47,6 +64,27 @@ def tf_get_area(tensor):
   shape = tensor.get_shape().as_list()
   area = np.prod(shape[0:])
   return area
+
+
+def tf_dog_kernel(size, mid, std, k):
+  """
+  if k is not defined, use the convention for the Laplacian of Guassians, which is 1.6
+  https://en.wikipedia.org/wiki/Difference_of_Gaussians
+  """
+
+  g1 = tf_gaussian_kernel(size, mid, std)
+  g2 = tf_gaussian_kernel(size, mid, k * std)
+  dog = g1 - g2
+  return dog
+
+
+def tf_gaussian_kernel(size: int, mean: float, std: float):
+  """Makes 2D gaussian Kernel for convolution."""
+  # https://stackoverflow.com/questions/52012657/how-to-make-a-2d-gaussian-filter-in-tensorflow
+  d = tf.distributions.Normal(mean, std)
+  vals = d.prob(tf.range(start=-size, limit=size + 1, dtype=tf.float32))
+  gauss_kernel = tf.einsum('i,j->ij', vals, vals)
+  return gauss_kernel / tf.reduce_sum(gauss_kernel)
 
 
 def tf_build_top_k_mask_op(input_tensor, k, batch_size, input_area):
@@ -82,7 +120,7 @@ def tf_build_top_k_mask_op(input_tensor, k, batch_size, input_area):
   # ---------------------------------------------------------------------
   values_vector = tf.ones(batch_size * k, dtype=tf.float32)
   mask_vector_dense = tf.sparse_to_dense(indices_vector, [batch_size * input_area], values_vector, default_value=0, validate_indices=False)
-  batch_mask_vector_op = tf.reshape(mask_vector_dense, [batch_size, input_area]) #, name="rank-mask")
+  batch_mask_vector_op = tf.reshape(mask_vector_dense, [batch_size, input_area])  #, name="rank-mask")
 
   return batch_mask_vector_op
 
@@ -91,8 +129,7 @@ def tf_build_top_k_mask_4d_op(input_tensor, k, batch_size, h, w, input_area):
 
   batch_h_w_size = batch_size * h * w
 
-  logging.debug('encoding shape = (%s, %s, %s, %s)',
-                batch_size, h, w, input_area)
+  logging.debug('encoding shape = (%s, %s, %s, %s)', batch_size, h, w, input_area)
 
   # Find the "winners". The top k elements in each batch sample. this is
   # what top_k does.
@@ -319,3 +356,45 @@ def degrade_by_mask(input_tensor, num_active, degrade_mask=None, degrade_factor=
   if label is None:
     return degraded
   return degraded, label
+
+
+# from https://gist.github.com/gyglim/1f8dfb1b5c82627ae3efcfbbadb9f514
+def histogram_summary(tag, values, bins=1000, minimum=None, maximum=None):
+  """Logs the histogram of a list/vector of values."""
+
+  # Convert to a numpy array
+  values = np.array(values)
+
+  if minimum is None:
+    minimum = float(np.min(values))
+
+  if maximum is None:
+    maximum = float(np.max(values))
+
+  # Create histogram using numpy
+  counts, bin_edges = np.histogram(values, bins=bins, range=[minimum, maximum])
+
+  # Fill fields of histogram proto
+  hist = tf.HistogramProto()
+  hist.min = minimum
+  hist.max = maximum
+  hist.num = int(np.prod(values.shape))
+  hist.sum = float(np.sum(values))
+  hist.sum_squares = float(np.sum(values ** 2))
+
+  # Requires equal number as bins, where the first goes from -DBL_MAX to bin_edges[1]
+  # See https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/framework/summary.proto#L30
+  # Thus, we drop the start of the first bin
+  bin_edges = bin_edges[1:]
+
+  # Add bin edges and counts
+  for edge in bin_edges:
+    hist.bucket_limit.append(edge)
+  for c in counts:
+    hist.bucket.append(c)
+
+  # Create and write Summary
+  summary = tf.Summary(value=[tf.Summary.Value(tag=tag, histo=hist)])
+
+  return summary
+

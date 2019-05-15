@@ -124,3 +124,7 @@ def class_filter(dataset, classes, is_superclass=False, proportion=1.0):
     raise ValueError('Failed to filter classes.')
 
   return output_classes
+
+
+def summary_name(batch_type):
+  return 'summary_' + batch_type

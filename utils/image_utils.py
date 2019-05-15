@@ -24,8 +24,6 @@ import io
 import math
 import random
 
-from PIL import Image
-
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
@@ -119,6 +117,45 @@ def degrade_image(image, label=None, degrade_type='horizontal', degrade_value=0,
   if label is None:
     return degraded_image
   return degraded_image, label
+
+
+def add_image_noise_flat(image, label=None, minval=0., noise_type='sp_binary', noise_factor=0.2):
+  """If the image is flat (batch, size) then use this version. It reshapes and calls the add_imagie_noise()"""
+  image_shape = image.shape.as_list()
+  image = tf.reshape(image, (-1, image_shape[1], 1, 1))
+  image = add_image_noise(image, label, minval, noise_type, noise_factor)
+  image = tf.reshape(image, (-1, image_shape[1]))
+  return image
+
+
+def add_image_noise(image, label=None, minval=0., noise_type='sp_binary', noise_factor=0.2):
+  image_shape = image.shape.as_list()
+  image_size = np.prod(image_shape[1:])
+
+  if noise_type == 'sp_float' or noise_type == 'sp_binary':
+    noise_mask = np.zeros(image_size)
+    noise_mask[:int(noise_factor * image_size)] = 1
+    noise_mask = tf.convert_to_tensor(noise_mask, dtype=tf.float32)
+    noise_mask = tf.random_shuffle(noise_mask)
+    noise_mask = tf.reshape(noise_mask, [-1, image_shape[1], image_shape[2], image_shape[3]])
+
+    noise_image = tf.random_uniform(image_shape, minval, 1.0)
+    if noise_type == 'sp_binary':
+      noise_image = tf.sign(noise_image)
+    noise_image = tf.multiply(noise_image, noise_mask)  # retain noise in positions of noise mask
+
+    image = tf.multiply(image, (1-noise_mask))  # zero out noise positions
+    corrupted_image = image + noise_image       # add in the noise
+  else:
+    if noise_type == 'none':
+      raise RuntimeWarning("Add noise has been called despite noise_type of 'none'.")
+    else:
+      raise NotImplementedError("The noise_type '{0}' is not supported.".format(noise_type))
+
+  if label is None:
+    return corrupted_image
+
+  return corrupted_image, label
 
 
 def pad_image(image, padding, mode='constant'):
@@ -287,9 +324,21 @@ def array_to_image_string(image_array):
   return image_string
 
 
-def arbitrary_image_summary(summary, input_tensor, name='image', max_outputs=3):
-  """Creates an off-graph tf.Summary.Image using arbitrary inputs."""
-  for i in range(max_outputs):
+def arbitrary_image_summary(summary, input_tensor, name='image', max_outputs=3, image_names=None):
+  """
+  Creates an off-graph tf.Summary.Image using arbitrary inputs.
+
+  input_tensor contains multiple images.
+    max_outputs specifies how many to plot
+    OR  specify how many to plot by specifying their names in `image_names`
+    num_images gets preference if it is defined.
+  """
+
+  if image_names is not None:
+    max_outputs = len(image_names)
+
+  num_outputs = min(max_outputs, input_tensor.shape[0])
+  for i in range(num_outputs):
     image_array = input_tensor[i]
     h, w, c = image_array.shape
 
@@ -301,6 +350,82 @@ def arbitrary_image_summary(summary, input_tensor, name='image', max_outputs=3):
         colorspace=c,
         encoded_image_string=image_string)
 
-    summary.value.add(tag=name + '/' + str(i), image=image)
+    if image_names is not None:
+      image_name = image_names[i]
+    else:
+      image_name = str(i)
+
+    summary.value.add(tag=name + '/' + image_name, image=image)
 
   return summary
+
+
+def add_op_images(dual, op_names, shape, max_outputs, summaries):
+  """
+  Convenience method to add a list of ops (as images) to a summary.
+
+  @:param shape list of shapes (same lengths as op_names, or if same shape for all, then a single value
+  @:param summaries are mutated
+  """
+
+  if not isinstance(shape, list):
+    op_shapes = [shape] * len(op_names)
+  else:
+    op_shapes = shape
+
+  for op_name, op_shape in zip(op_names, op_shapes):
+    op = dual.get_op(op_name)
+    if op is not None:
+      reshaped = tf.reshape(op, shape)
+      summaries.append(tf.summary.image(op_name, reshaped, max_outputs=max_outputs))
+
+
+def add_arbitrary_images_summary(summary, scope_name, images, names, combined=False, max_outputs=3):
+  """Add multiple images to a summary off graph, optionally combine into one."""
+  if not combined:
+    for image, name in zip(images, names):
+      arbitrary_image_summary(summary, image, name='pcw/' + name, max_outputs=max_outputs)
+  else:
+    combined_image = None
+    combined_name = ''
+    for image, name in zip(images, names):
+      if combined_image is None:
+        combined_image = image
+        combined_name = name
+        continue
+      combined_image = np.concatenate((combined_image, image), axis=1)
+      combined_name = combined_name + '-' + name
+    arbitrary_image_summary(summary, combined_image, name=scope_name + '/' + combined_name, max_outputs=max_outputs)
+
+
+def concat_images(images, batch_size, images_shape=None):
+  """
+  Concatenate a list of images into one column of sub-images.
+  Adds a 1 pixel line delineating them.
+
+  If images_shape is not specified, use the shape of the first image
+
+  :param images: a list of images
+  :param batch_size:
+  :param images_shape: first dimension is ignored (it is often not valid during graph build time)
+  :return: the image containing concatenation of the images in `images`
+  """
+  concat_image = None
+
+  if len(images) == 0:
+    return
+
+  if images_shape is None:
+    images_shape = get_image_summary_shape(images[0].get_shape().as_list())
+
+  for im in images:
+    image_reshaped = tf.reshape(im, images_shape)
+    if concat_image is None:
+      concat_image = image_reshaped
+    else:
+      # add a line in between
+      line = tf.ones([batch_size, 1, images_shape[2], images_shape[3]])
+      concat_image = tf.concat([concat_image, line], axis=1)
+      concat_image = tf.concat([concat_image, image_reshaped], axis=1)
+
+  return concat_image

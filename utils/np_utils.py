@@ -17,6 +17,8 @@
 
 import logging
 import math
+import os
+
 import numpy as np
 
 import matplotlib.pyplot as plt
@@ -69,10 +71,24 @@ def np_dropout(mask, rate=0.1):
   """
   Remove bits from mask with probability rate
   """
-  r = np.random.uniform(0, 1, mask.shape) # generate a random matrix
+  r = np.random.uniform(0, 1, mask.shape)  # generate a random matrix
   exclusions = np.where(r < rate)
   mask[exclusions] = 0.0
   return mask
+
+
+def np_write_array_list_as_image(base_folder, arr, name):
+
+  filetype = 'png'
+  rel_filepath = name + '.' + filetype
+  filepath = os.path.join(base_folder, rel_filepath)
+
+  arr = np.squeeze(arr, 0)
+  arr = np.squeeze(arr, 2)
+
+  plt.imshow(arr, interpolation='none')
+  plt.savefig(filepath, dpi=300, format=filetype)
+  plt.close()
 
 
 def np_write_filters(filters, filter_shape, file_name='filters.png'):
@@ -125,3 +141,10 @@ def np_write_filters(filters, filter_shape, file_name='filters.png'):
   plt.close()
 
   logging.debug('save filters OK')
+
+
+def print_simple_stats(arr, name):
+  min = np.min(arr)
+  max = np.max(arr)
+  print('{0} (min,max) = ({1},{2})'.format(name, min, max))
+

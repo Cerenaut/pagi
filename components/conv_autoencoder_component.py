@@ -40,20 +40,13 @@ class ConvAutoencoderComponent(AutoencoderComponent):
   @staticmethod
   def default_hparams():
     """Builds an HParam object with default hyperparameters."""
-    return tf.contrib.training.HParams(
-        learning_rate=0.0005,
-        loss_type='mse',
-        nonlinearity='relu',
-        batch_size=64,
-        filters=32,
-        filters_field_width=6,
-        filters_field_height=6,
-        filters_field_stride=3,
-        optimizer='adam',
-        momentum=0.9,
-        momentum_nesterov=False,
-        secondary=False
-    )
+    hparams = AutoencoderComponent.default_hparams()
+    hparams.set_hparam('nonlinearity', 'relu')
+    hparams.set_hparam('filters', 32)
+    hparams.add_hparam('filters_field_width', 6)
+    hparams.add_hparam('filters_field_height', 6)
+    hparams.add_hparam('filters_field_stride', 3)
+    return hparams
 
   def _create_encoding_shape_4d(self, input_shape):
     return ConvAutoencoderComponent.get_convolved_shape(input_shape, self._hparams.filters_field_height,
@@ -114,10 +107,10 @@ class ConvAutoencoderComponent(AutoencoderComponent):
     # Encoding
     # -----------------------------------------------------------------
     conv_filter_shape = [
-        kernel_size[0],       # field w
-        kernel_size[1],       # field h
-        self._input_shape[3], # input depth
-        self._hparams.filters # number of filters
+        kernel_size[0],        # field w
+        kernel_size[1],        # field h
+        self._input_shape[3],  # input depth
+        self._hparams.filters  # number of filters
     ]
 
     # Initialise weights and bias for the filter
@@ -138,7 +131,7 @@ class ConvAutoencoderComponent(AutoencoderComponent):
     # Setup the convolutional layer operation
     # Note: The first kernel is centered at the origin, not aligned to
     # it by its origin.
-    convolved = tf.nn.conv2d(self._input, self._weights, self._strides, padding='SAME', name='convolved') # zero padded
+    convolved = tf.nn.conv2d(self._input, self._weights, self._strides, padding='SAME', name='convolved')  # zero padded
     logging.debug(convolved)
 
     # Bias
@@ -194,18 +187,18 @@ class ConvAutoencoderComponent(AutoencoderComponent):
     weights_shape = np.shape(weights_values)
     logging.debug('Weights shape: %s', weights_shape)
 
-    field_depth = weights_shape[2]
     filters = weights_shape[3]
-    field_width = self._hparams.filters_field_width * field_depth
+    field_depth = weights_shape[2]
     field_height = self._hparams.filters_field_height
+    field_width = self._hparams.filters_field_width * field_depth
 
     weights_transpose = np.transpose(weights_values, axes=[3, 0, 1, 2])
     logging.debug('Weights transpose shape: %s', weights_transpose.shape)
-    weights_reshape = np.reshape(weights_transpose, [filters, field_height, field_width * field_depth])
+    weights_reshape = np.reshape(weights_transpose, [filters, field_height, field_width])
     logging.debug('Weights re shape: %s', weights_reshape.shape)
 
-    file_name = "filters_" + self._name + ".png"
-    if folder is not None and folder != "":
+    file_name = 'filters_' + self._name + '.png'
+    if folder:
       file_name = folder + '/' + file_name
 
     np_write_filters(weights_reshape, [field_height, field_width], file_name)

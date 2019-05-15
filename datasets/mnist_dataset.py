@@ -72,7 +72,9 @@ class MNISTDataset(Dataset):
       image = tf.decode_raw(image, tf.uint8)
       image = tf.cast(image, tf.float32)
       image = tf.reshape(image, [self.IMAGE_DIM, self.IMAGE_DIM, 1])
-      return image / 255.0
+      # image = tf.image.per_image_standardization(image)
+      image = image / 255.0
+      return image
 
     def decode_label(label):
       label = tf.decode_raw(label, tf.uint8)  # tf.string -> [tf.uint8]

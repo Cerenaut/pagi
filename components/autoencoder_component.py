@@ -21,10 +21,12 @@ from __future__ import print_function
 
 import logging
 
+
 import numpy as np
 import tensorflow as tf
 
 from components.component import Component
+from components.summarize_levels import SummarizeLevels
 from utils.dual import DualData
 from utils.layer_utils import activation_fn
 from utils.np_utils import np_write_filters
@@ -51,7 +53,9 @@ class AutoencoderComponent(Component):
         momentum=0.9,
         momentum_nesterov=False,
         secondary=True,
-        use_bias=True     # use bias in the encoding weighted sum
+        use_bias=True,  # use bias in the encoding weighted sum
+        summarize_level=SummarizeLevels.ALL.value,
+        max_outputs=3  # Number of outputs in TensorBoard
     )
 
   def __init__(self):
@@ -98,7 +102,7 @@ class AutoencoderComponent(Component):
     self._input_values = input_values
     self._encoding_shape = encoding_shape
     if self._encoding_shape is None:
-      self._encoding_shape = self._create_encoding_shape_4d(input_shape)  #.as_list()
+      self._encoding_shape = self._create_encoding_shape_4d(input_shape)  # .as_list()
 
     self._batch_type = None
 
@@ -136,12 +140,14 @@ class AutoencoderComponent(Component):
 
     self._batch_type = tf.placeholder_with_default(input='training', shape=[], name='batch_type')
 
+    self._dual.set_op('inputs', self._input_values)
+
     with tf.name_scope('encoder'):
 
       # Primary ops for encoding
       with tf.name_scope('primary'):
         training_encoding, testing_encoding = self._build_encoding(self._input_values)
-        training_filtered, testing_filtered = self._build_filtering(training_encoding, testing_encoding )
+        training_filtered, testing_filtered = self._build_filtering(training_encoding, testing_encoding)
 
         self._dual.set_op('zs', training_filtered)
 
@@ -157,8 +163,7 @@ class AutoencoderComponent(Component):
               'secondary_encoding_input', shape=input_shape, default_value=1.0).add_pl(default=True)
 
           secondary_training_encoding, secondary_testing_encoding = self._build_encoding(secondary_encoding_input)
-          _, secondary_testing_filtered = self._build_filtering(secondary_training_encoding,
-                                                                secondary_testing_encoding)
+          _, secondary_testing_filtered = self._build_filtering(secondary_training_encoding, secondary_testing_encoding)
 
           # Inference output fork, doesn't accumulate gradients
           # Note: This is the encoding op via placeholder values
@@ -397,7 +402,8 @@ class AutoencoderComponent(Component):
         'loss': self._dual.get_op('loss'),
         'training': self._dual.get_op('training'),
         'encoding': self._dual.get_op('encoding'),
-        'decoding': self._dual.get_op('decoding')
+        'decoding': self._dual.get_op('decoding'),
+        'inputs': self._dual.get_op('inputs')
     }
 
     if self._summary_training_op is not None:
@@ -407,7 +413,7 @@ class AutoencoderComponent(Component):
     self_fetched = fetched[self._name]
     self._loss = self_fetched['loss']
 
-    names = ['encoding', 'decoding']
+    names = ['encoding', 'decoding', 'inputs']
     self._dual.set_fetches(fetched, names)
 
     if self._summary_training_op is not None:
@@ -426,18 +432,22 @@ class AutoencoderComponent(Component):
   def add_encoding_fetches(self, fetches):
     fetches[self._name] = {
         'encoding': self._dual.get_op('encoding'),
-        'decoding': self._dual.get_op('decoding')
+        'decoding': self._dual.get_op('decoding'),
+        'inputs': self._dual.get_op('inputs')
     }
 
     if self._summary_encoding_op is not None:
       fetches[self._name]['summaries'] = self._summary_encoding_op
 
   def set_encoding_fetches(self, fetched):
-    names = ['encoding', 'decoding']
+    names = ['encoding', 'decoding', 'inputs']
     self._dual.set_fetches(fetched, names)
 
     if self._summary_encoding_op is not None:
       self._summary_values = fetched[self._name]['summaries']
+
+  def get_inputs(self):
+    return self._dual.get_values('inputs')
 
   def get_encoding(self):
     return self._dual.get_values('encoding')
@@ -490,7 +500,7 @@ class AutoencoderComponent(Component):
 
       if self._weights is None:
         self._weights = tf.get_variable('kernel')
-        logging.debug('weights: %s', self._weights)  # shape=(784, 1024) = input, cells
+        logging.debug('Weights: %s', self._weights)  # shape=(784, 1024) = input, cells
 
       weights_values = session.run([self._weights])
       weights_transpose = np.transpose(weights_values)
@@ -507,13 +517,15 @@ class AutoencoderComponent(Component):
   def build_training_summaries(self):
     with tf.name_scope('training'):
       summaries = self._build_summaries()
-      self._summary_training_op = tf.summary.merge(summaries)
+      if len(summaries) > 0:
+        self._summary_training_op = tf.summary.merge(summaries)
       return self._summary_training_op
 
   def build_encoding_summaries(self):
     with tf.name_scope('encoding'):
       summaries = self._build_summaries()
-      self._summary_encoding_op = tf.summary.merge(summaries)
+      if len(summaries) > 0:
+        self._summary_encoding_op = tf.summary.merge(summaries)
       return self._summary_encoding_op
 
   def build_secondary_decoding_summaries(self, scope='secondary_decoding', name=None):
@@ -522,7 +534,7 @@ class AutoencoderComponent(Component):
       scope += 'secondary_decoding_' + name
 
     with tf.name_scope(scope):
-      max_outputs = 3
+      max_outputs = self._hparams.max_outputs
       summaries = []
 
       secondary_decoding = self.get_secondary_decoding_op()
@@ -546,8 +558,11 @@ class AutoencoderComponent(Component):
 
   def _build_summaries(self):
     """Build the summaries for TensorBoard."""
-    max_outputs = 3
+    max_outputs = self._hparams.max_outputs
     summaries = []
+
+    if self._hparams.summarize_level == SummarizeLevels.OFF.value:
+      return summaries
 
     encoding_op = self.get_encoding_op()
     decoding_op = self.get_decoding_op()

@@ -27,8 +27,9 @@
     "interval_batches": 10
   },
   "workflow-options": {
-    "train_classes": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-    "test_classes": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    "superclass": false,
+    "train_classes": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+    "test_classes": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
   },
   "classifier-options": {
     "model": "logistic",

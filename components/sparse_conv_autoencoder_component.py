@@ -35,24 +35,9 @@ class SparseConvAutoencoderComponent(ConvAutoencoderComponent):
   @staticmethod
   def default_hparams():
     """Builds an HParam object with default hyperparameters."""
-    return tf.contrib.training.HParams(
-        learning_rate=0.0005,
-        loss_type='mse',
-        nonlinearity='none',
-        batch_size=100,
-        filters=64,
-        filters_field_width=6,
-        filters_field_height=6,
-        filters_field_stride=3,
-        optimizer='adam',
-        momentum=0.9,
-        momentum_nesterov=False,
-        secondary=False,
-
-        # Additional sparse parameters:
-        sparsity=5,
-        sparsity_output_factor=1.5
-    )
+    hparams = ConvAutoencoderComponent.default_hparams()
+    hparams.add_hparam('sparsity', 5)
+    hparams.add_hparam('sparsity_output_factor', 1.5)
 
   def _build_filtering(self, training_encoding, testing_encoding):
     """Build filtering/masking for specified encoding."""

@@ -37,24 +37,15 @@ class SparseAutoencoderComponent(AutoencoderComponent):
   @staticmethod
   def default_hparams():
     """Builds an HParam object with default hyperparameters."""
-    return tf.contrib.training.HParams(
-        learning_rate=0.0005,
-        loss_type='mse',
-        nonlinearity='none',
-        batch_size=250,
-        filters=1024,
-        optimizer='adam',
-        momentum=0.9,
-        momentum_nesterov=False,
-        secondary=True,
-        use_bias=True,
+    hparams = AutoencoderComponent.default_hparams()
+    hparams.add_hparam('sparsity', 25)
+    hparams.add_hparam('sparsity_output_factor', 3.0)
 
-        # Additional sparse parameters:
-        sparsity=25,
-        sparsity_output_factor=3.0
-        #frequency_learning_rate=0.1, # TODO restore frequency testing
-        #frequency_update_interval=30  # batches
-    )
+    # TODO restore frequency testing
+    # hparams.add_hparam('frequency_learning_rate', 0.1)
+    # hparams.add_hparam('frequency_update_interval', 30)
+
+    return hparams
 
   def _build_filtering(self, training_encoding, testing_encoding):
     """Build the encoding filtering."""

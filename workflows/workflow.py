@@ -26,9 +26,9 @@ import os
 import tensorflow as tf
 
 # Utilities
-from classifier.harness import Harness
 from utils import generic_utils as util
 from utils import logger_utils
+from utils.generic_utils import class_filter
 from utils.tf_utils import tf_label_filter
 
 
@@ -39,10 +39,12 @@ class Workflow(object):
   def default_opts():
     """Builds an HParam object with default workflow options."""
     return tf.contrib.training.HParams(
-        train_classes=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
-        test_classes=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
-        evaluate=True,
-        train=True
+      superclass=False,
+      class_proportion=1.0,
+      train_classes=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+      test_classes=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+      evaluate=True,
+      train=True
     )
 
   def __init__(self, session, dataset_type, dataset_location, component_type, hparams_override, eval_opts, export_opts,
@@ -73,6 +75,13 @@ class Workflow(object):
 
     self._setup()
 
+  def _test_consistency(self):
+    """
+    If multiple params relate to each other, make sure they are set consistently
+    - prevent hard to diagnose runtime issues
+    """
+    pass    # Override in child workflows
+
   def _setup(self):
     """Setup the experiment"""
 
@@ -83,8 +92,12 @@ class Workflow(object):
     if self._hparams_override:
       self._hparams.override_from_dict(self._hparams_override)
 
-    print('HParams:', json.dumps(self._hparams.values(), indent=4))
+    hparams_json = self._hparams.to_json(indent=4)
+    print('HParams:', hparams_json)
     logger_utils.log_param(self._hparams)
+
+    # catch workflow/component setup issues before trying to setup component
+    self._test_consistency()
 
     # Setup dataset
     self._setup_dataset()
@@ -101,6 +114,15 @@ class Workflow(object):
     logger_utils.log_param({'summary_dir': self._summary_dir})
     self._writer = tf.summary.FileWriter(self._summary_dir, self._session.graph)
 
+    # Write all parameters to disk
+    with open(os.path.join(self._summary_dir, 'params.json'), 'w') as f:
+      params = {
+          'hparams': self._hparams.values(),
+          'workflow-options': self._opts
+      }
+
+      f.write(json.dumps(params, indent=4))
+
     # Initialise variables in the graph
     if not self._checkpoint_opts['checkpoint_path']:
       init_op = tf.global_variables_initializer()
@@ -113,10 +135,13 @@ class Workflow(object):
 
       # Dataset for training
       train_dataset = self._dataset.get_train()
-      # Filter training set to keep specified labels only
-      train_classes = self._opts['train_classes']
-      if train_classes and len(train_classes) > 0:
-        train_dataset = train_dataset.filter(lambda x, y: tf_label_filter(x, y, self._opts['train_classes']))
+      # Filter dataset to keep specified classes only
+      if self._opts['train_classes'] and len(self._opts['train_classes']) > 0:
+        the_classes = class_filter(self._dataset, self._opts['train_classes'],
+                                   self._opts['superclass'],
+                                   self._opts['class_proportion'])
+        train_dataset = train_dataset.filter(lambda x, y: tf_label_filter(x, y, the_classes))
+
       train_dataset = train_dataset.shuffle(buffer_size=10000)
       train_dataset = train_dataset.apply(tf.contrib.data.batch_and_drop_remainder(self._hparams.batch_size))
       train_dataset = train_dataset.prefetch(1)
@@ -125,18 +150,23 @@ class Workflow(object):
       # Evaluation dataset (i.e. no shuffling, pre-processing)
       eval_train_dataset = self._dataset.get_train()
       # Filter test set to keep specified labels only --> all evaluation (train and test)
-
-      test_classes = self._opts['test_classes']
-      if test_classes and len(test_classes) > 0:
-        eval_train_dataset = eval_train_dataset.filter(lambda x, y: tf_label_filter(x, y, self._opts['test_classes']))
+      if self._opts['test_classes'] and len(self._opts['test_classes']) > 0:
+        the_classes = class_filter(self._dataset, self._opts['test_classes'],
+                                   self._opts['superclass'],
+                                   self._opts['class_proportion'])
+        eval_train_dataset = eval_train_dataset.filter(lambda x, y: tf_label_filter(x, y, the_classes))
       eval_train_dataset = eval_train_dataset.apply(tf.contrib.data.batch_and_drop_remainder(self._hparams.batch_size))
       eval_train_dataset = eval_train_dataset.prefetch(1)
       eval_train_dataset = eval_train_dataset.repeat(1)
 
       eval_test_dataset = self._dataset.get_test()
       # Filter test set to keep specified labels only --> all evaluation (train and test)
-      if self._opts['test_classes']:
-        eval_test_dataset = eval_test_dataset.filter(lambda x, y: tf_label_filter(x, y, self._opts['test_classes']))
+      if self._opts['test_classes'] and len(self._opts['test_classes']) > 0:
+        the_classes = class_filter(self._dataset, self._opts['test_classes'],
+                                   self._opts['superclass'],
+                                   self._opts['class_proportion'])
+        eval_test_dataset = eval_test_dataset.filter(lambda x, y: tf_label_filter(x, y, the_classes))
+
       eval_test_dataset = eval_test_dataset.apply(tf.contrib.data.batch_and_drop_remainder(self._hparams.batch_size))
       eval_test_dataset = eval_test_dataset.prefetch(1)
       eval_test_dataset = eval_test_dataset.repeat(1)
@@ -300,8 +330,7 @@ class Workflow(object):
 
         # evaluation: every N steps, test the encoding model
         if evaluate:
-          # defaults to once per batches, and ensure at least once at the end
-          if (batch == num_batches-1) or ((batch + 1) % self._eval_opts['interval_batches'] == 0):
+          if (batch + 1) % self._eval_opts['interval_batches'] == 0:  # defaults to once per batches
             self.helper_evaluate(batch)
     elif evaluate:  # train is False
       self.helper_evaluate(0)
@@ -364,7 +393,9 @@ class Workflow(object):
 
     harness.write_component_evaluation_summaries(self._component, batch, self._writer)
 
-  def export(self, session):
+  def export(self, session, feed_dict):
+    del feed_dict
+
     # Export all filters to disk
     self._component.write_filters(session, self._summary_dir)
 

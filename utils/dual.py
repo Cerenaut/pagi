@@ -36,7 +36,7 @@ class DualData(object):
       dual = self._duals[name]
     else:
       dual = self.add(name)
-    dual.set_op(op)
+      dual.set_op(op)
 
   def get_pl(self, name):
     if name in self._duals.keys():
@@ -79,6 +79,7 @@ class DualData(object):
       })
 
   def add_fetches(self, fetches, names):
+    """ warning: replaces existing fetches """
     leaf_fetches = self.get_fetches(names)
     fetches[self._root_name] = leaf_fetches
 

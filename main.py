@@ -27,6 +27,7 @@ import tensorflow as tf
 
 from utils import logger_utils
 from utils import generic_utils as util
+from utils.tb_debug import TbDebug
 
 # Flags
 FLAGS = tf.flags.FLAGS
@@ -71,6 +72,7 @@ tf.flags.DEFINE_boolean('evaluate', True, 'Enable evaluation during run loop.')
 tf.flags.DEFINE_boolean('train', True, 'Enable training during run loop.')
 tf.flags.DEFINE_boolean('summarize', True, 'Enable summaries during training.')
 tf.flags.DEFINE_boolean('track', False, 'Track experiment using mlflow.')
+tf.flags.DEFINE_boolean('tb_debug', False, 'Debug with tensorboard debugger.')
 
 # Overrides the default component's hparams
 hparams_override = {
@@ -80,6 +82,8 @@ hparams_override = {
 def run_experiment(exp_config):
   """Setup and execute an experiment workflow with specified options."""
   util.set_logging(FLAGS.logging)
+
+  TbDebug.TB_DEBUG = FLAGS.tb_debug
 
   # Get the component's default HParams, then override
   # -------------------------------------------------------------------------
@@ -165,6 +169,12 @@ def run_experiment(exp_config):
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     session = tf.Session(config=config)
+
+    if TbDebug.TB_DEBUG:
+      from tensorflow.python import debug as tf_debug
+      session = tf_debug.TensorBoardDebugWrapperSession(session, 'localhost:6064')
+      print("Use the following command to run Tensorboard Debugger:\n'tensorboard --logdir=./ --debugger_port 6064'")
+
     util.set_seed(FLAGS.seed)
 
     # Load relevant dataset, workflow and component modules

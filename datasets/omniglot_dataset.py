@@ -47,11 +47,11 @@ class OmniglotDataset(Dataset):
         num_test_classes=659,
         num_classes=1623)
 
-  def get_train(self):
+  def get_train(self, preprocess=False):
     """tf.data.Dataset object for Omniglot training data."""
     return self._dataset(self._directory, 'images_background')
 
-  def get_test(self):
+  def get_test(self, preprocess=False):
     """tf.data.Dataset object for Omniglot test data."""
     return self._dataset(self._directory, 'images_evaluation')
 
@@ -175,3 +175,7 @@ class OmniglotDataset(Dataset):
           idx += 1
 
     return filename_arr, label_arr
+
+  def set_shape(self, height, width):
+    self._dataset_shape[1] = height
+    self._dataset_shape[2] = width

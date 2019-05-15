@@ -17,6 +17,7 @@
 
 import abc
 
+
 class Dataset(object):
   """Dataset base class based on tf.data."""
 
