@@ -79,7 +79,7 @@ setup(
   keywords='tensorflow memory machine learning',
   entry_points={
       'console_scripts': [
-          'pagi = pagi.utils.cli:main',
+          'pagi = pagi.scripts.cli:main',
       ],
   },
 )
