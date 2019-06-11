@@ -15,6 +15,7 @@
 
 """Generic helper methods."""
 
+import os
 import sys
 import math
 import random
@@ -83,7 +84,18 @@ def get_module_class_ref(module_name, module_filepath=None):
   """Imports a module by name (or filepath) and gets a reference to first class in the module."""
   module_class = None
 
+  def resolve_filename(dir_path, module_name):
+    filename = os.path.join(dir_path, *module_name.split('.'))
+    if os.path.isdir(filename):
+      filename = os.path.join(filename, '__init__.py')
+    else:
+      filename += '.py'
+    return filename
+
   try:
+    if not module_name.startswith('pagi.'):
+      module_filepath = resolve_filename(os.getcwd(), module_name)
+
     if module_filepath:
       spec = importlib.util.spec_from_file_location(module_name, module_filepath)
       module = importlib.util.module_from_spec(spec)

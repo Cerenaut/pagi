@@ -26,24 +26,24 @@ def validate_dict(input_dict):
 
 def log_param(hparams):
   """Log multiple hyperparameters from a dict."""
-  if not tf.flags.FLAGS.track:
-    return
+  try:
+    if isinstance(hparams, tf.contrib.training.HParams):
+      hparams = hparams.values()
 
-  if isinstance(hparams, tf.contrib.training.HParams):
-    hparams = hparams.values()
+    validate_dict(hparams)
 
-  validate_dict(hparams)
-
-  for key, value in hparams.items():
-    mlflow.log_param(key, value)
+    for key, value in hparams.items():
+      mlflow.log_param(key, value)
+  except:
+    pass
 
 
 def log_metric(metrics):
   """Log multiple metrics from a dict."""
-  if not tf.flags.FLAGS.track:
-    return
+  try:
+    validate_dict(metrics)
 
-  validate_dict(metrics)
-
-  for key, value in metrics.items():
-    mlflow.log_metric(key, value)
+    for key, value in metrics.items():
+      mlflow.log_metric(key, value)
+  except:
+    pass

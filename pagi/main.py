@@ -25,8 +25,8 @@ import json
 import mlflow
 import tensorflow as tf
 
-from utils import logger_utils
-from utils import generic_utils as util
+from pagi.utils import logger_utils
+from pagi.utils import generic_utils as util
 from pagi.utils.tb_debug import TbDebug
 
 # Flags

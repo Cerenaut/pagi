@@ -24,7 +24,7 @@ import tensorflow as tf
 from sklearn import svm
 from sklearn import metrics
 
-from classifier.models import model
+from pagi.classifier.models import model
 
 
 class SvmModel(model.Model):

@@ -21,8 +21,8 @@ import logging
 
 from pagi.components.conv_autoencoder_component import ConvAutoencoderComponent
 from pagi.components.summarize_levels import SummarizeLevels
-from utils import image_utils
-from utils import layer_utils
+from pagi.utils import image_utils
+from pagi.utils import layer_utils
 
 from pagi.components.sparse_conv_autoencoder_component import SparseConvAutoencoderComponent
 

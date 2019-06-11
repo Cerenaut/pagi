@@ -17,7 +17,7 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.python.ops import gen_nn_ops
 
-from utils import tf_utils, image_utils
+from pagi.utils import tf_utils, image_utils
 
 
 class InterestFilter:

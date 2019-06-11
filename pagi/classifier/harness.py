@@ -24,8 +24,8 @@ import logging
 import numpy as np
 import tensorflow as tf
 
-from classifier.classifier import Classifier
-from classifier.experiment import Experiment
+from pagi.classifier.classifier import Classifier
+from pagi.classifier.experiment import Experiment
 
 
 class Harness(object):

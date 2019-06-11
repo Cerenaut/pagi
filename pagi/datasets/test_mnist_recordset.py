@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import tensorflow as tf
-from utils import data_utils
+from pagi.utils import data_utils
 
 tf.enable_eager_execution()
 

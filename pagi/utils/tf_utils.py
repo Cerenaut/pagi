@@ -20,7 +20,7 @@ import logging
 import numpy as np
 import tensorflow as tf
 
-from utils import image_utils
+from pagi.utils import image_utils
 
 
 def tf_invert(feature, label):

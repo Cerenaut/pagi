@@ -24,7 +24,7 @@ import tensorflow as tf
 from sklearn import metrics
 from sklearn.linear_model import LogisticRegression
 
-from classifier.models import model
+from pagi.classifier.models import model
 
 
 class LogisticRegressionModel(model.Model):

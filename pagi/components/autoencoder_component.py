@@ -30,7 +30,7 @@ from pagi.components.summarize_levels import SummarizeLevels
 from pagi.utils.dual import DualData
 from pagi.utils.layer_utils import activation_fn
 from pagi.utils.np_utils import np_write_filters
-from utils import image_utils
+from pagi.utils import image_utils
 
 
 class AutoencoderComponent(Component):

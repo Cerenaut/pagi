@@ -30,8 +30,8 @@ import matplotlib.pyplot as plt
 from sklearn import utils
 from sklearn import metrics
 
-from classifier.models.logistic_regression_model import LogisticRegressionModel
-from classifier.models.svm_model import SvmModel
+from pagi.classifier.models.logistic_regression_model import LogisticRegressionModel
+from pagi.classifier.models.svm_model import SvmModel
 
 
 class Classifier(object):
