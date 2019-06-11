@@ -26,10 +26,12 @@ import os
 import tensorflow as tf
 
 # Utilities
-from utils import generic_utils as util
-from utils import logger_utils
+from pagi.utils import generic_utils as util
+from pagi.utils import logger_utils
 from pagi.utils.generic_utils import class_filter
 from pagi.utils.tf_utils import tf_label_filter
+
+from pagi.classifier.harness import Harness
 
 
 class Workflow(object):
@@ -43,7 +45,7 @@ class Workflow(object):
       class_proportion=1.0,
       train_classes=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
       test_classes=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
-      evaluate=True,
+      evaluate=False,
       train=True
     )
 
@@ -314,7 +316,7 @@ class Workflow(object):
         training_epoch = self._dataset.get_training_epoch(self._hparams.batch_size, training_step)
 
         # Perform the training, and retrieve feed_dict for evaluation phase
-        self.training(training_handle, batch)
+        feed_dict = self.training(training_handle, batch)
 
         self._on_after_training_batch(batch, training_step, training_epoch)
 
@@ -322,7 +324,7 @@ class Workflow(object):
         # -------------------------------------------------------------------------
         if self._export_opts['export_filters']:
           if (batch == num_batches-1) or ((batch + 1) % self._export_opts['interval_batches'] == 0):
-            self.export(self._session)
+            self.export(self._session, feed_dict)
 
         if self._export_opts['export_checkpoint']:
           if (batch == num_batches-1) or ((batch + 1) % num_batches == 0):
