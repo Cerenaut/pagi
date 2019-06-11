@@ -26,7 +26,7 @@ import tensorflow as tf
 
 from six.moves import urllib
 
-from datasets.dataset import Dataset
+from pagi.datasets.dataset import Dataset
 
 
 class SmallNORBDataset(Dataset):

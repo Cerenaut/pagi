@@ -15,7 +15,7 @@
 
 """Small Omniglot dataset using the tf.data module."""
 
-from datasets.omniglot_dataset import OmniglotDataset
+from pagi.datasets.omniglot_dataset import OmniglotDataset
 
 class SmallOmniglotDataset(OmniglotDataset):
   """Smaller version of the Omniglot Dataset based on tf.data."""

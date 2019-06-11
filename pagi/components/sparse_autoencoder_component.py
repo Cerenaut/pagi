@@ -21,8 +21,8 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-from components.autoencoder_component import AutoencoderComponent
-from utils.tf_utils import tf_build_top_k_mask_op
+from pagi.components.autoencoder_component import AutoencoderComponent
+from pagi.utils.tf_utils import tf_build_top_k_mask_op
 
 
 class SparseAutoencoderComponent(AutoencoderComponent):

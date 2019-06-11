@@ -27,7 +27,7 @@ from six.moves import urllib
 import numpy as np
 import tensorflow as tf
 
-from datasets.dataset import Dataset
+from pagi.datasets.dataset import Dataset
 
 
 class OmniglotDataset(Dataset):

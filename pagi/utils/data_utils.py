@@ -22,7 +22,7 @@ import tensorflow as tf
 # The following functions can be used to convert a value to a type compatible
 # with tf.Example.
 # From https://www.tensorflow.org/tutorials/load_data/tf_records
-from utils.tf_utils import tf_print
+from pagi.utils.tf_utils import tf_print
 
 
 def bytes_feature(value):

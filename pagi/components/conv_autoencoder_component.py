@@ -25,9 +25,9 @@ import logging
 import numpy as np
 import tensorflow as tf
 
-from components.autoencoder_component import AutoencoderComponent
-from utils.layer_utils import activation_fn
-from utils.np_utils import np_write_filters
+from pagi.components.autoencoder_component import AutoencoderComponent
+from pagi.utils.layer_utils import activation_fn
+from pagi.utils.np_utils import np_write_filters
 
 
 class ConvAutoencoderComponent(AutoencoderComponent):

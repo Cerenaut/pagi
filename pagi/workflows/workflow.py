@@ -28,8 +28,8 @@ import tensorflow as tf
 # Utilities
 from utils import generic_utils as util
 from utils import logger_utils
-from utils.generic_utils import class_filter
-from utils.tf_utils import tf_label_filter
+from pagi.utils.generic_utils import class_filter
+from pagi.utils.tf_utils import tf_label_filter
 
 
 class Workflow(object):

@@ -18,8 +18,8 @@
 import numpy as np
 import tensorflow as tf
 
-from utils.image_utils import pad_image, shift_image
-from datasets.mnist_dataset import MNISTDataset
+from pagi.utils.image_utils import pad_image, shift_image
+from pagi.datasets.mnist_dataset import MNISTDataset
 
 class PaddedMNISTDataset(MNISTDataset):
   """Padded version of the MNIST Dataset for affNIST generalization."""

@@ -16,8 +16,8 @@
 """MNIST dataset read in from a TFRecordSet, using the tf.data module."""
 
 
-from datasets.dataset import Dataset
-from utils.data_utils import read_subset, generate_filenames
+from pagi.datasets.dataset import Dataset
+from pagi.utils.data_utils import read_subset, generate_filenames
 
 
 class MNISTRecordsetDataset(Dataset):

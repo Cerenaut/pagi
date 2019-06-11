@@ -28,9 +28,9 @@ from os.path import dirname, abspath
 import numpy as np
 import tensorflow as tf
 
-from components.sparse_conv_autoencoder_component import SparseConvAutoencoderComponent
-from utils.dual import DualData
-from components.sparse_conv_maxpool import SparseConvAutoencoderMaxPoolComponent
+from pagi.components.sparse_conv_autoencoder_component import SparseConvAutoencoderComponent
+from pagi.utils.dual import DualData
+from pagi.components.sparse_conv_maxpool import SparseConvAutoencoderMaxPoolComponent
 
 # Supervised Components
 d = dirname(dirname(dirname(abspath(__file__)))) # Each dirname goes up one

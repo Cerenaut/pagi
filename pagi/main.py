@@ -27,7 +27,7 @@ import tensorflow as tf
 
 from utils import logger_utils
 from utils import generic_utils as util
-from utils.tb_debug import TbDebug
+from pagi.utils.tb_debug import TbDebug
 
 # Flags
 FLAGS = tf.flags.FLAGS

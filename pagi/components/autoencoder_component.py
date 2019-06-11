@@ -25,11 +25,11 @@ import logging
 import numpy as np
 import tensorflow as tf
 
-from components.component import Component
-from components.summarize_levels import SummarizeLevels
-from utils.dual import DualData
-from utils.layer_utils import activation_fn
-from utils.np_utils import np_write_filters
+from pagi.components.component import Component
+from pagi.components.summarize_levels import SummarizeLevels
+from pagi.utils.dual import DualData
+from pagi.utils.layer_utils import activation_fn
+from pagi.utils.np_utils import np_write_filters
 from utils import image_utils
 
 

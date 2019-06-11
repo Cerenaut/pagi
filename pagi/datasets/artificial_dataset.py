@@ -16,7 +16,7 @@
 """Dataset generated with random process."""
 
 
-from datasets.dataset import Dataset
+from pagi.datasets.dataset import Dataset
 import numpy as np
 import tensorflow as tf
 

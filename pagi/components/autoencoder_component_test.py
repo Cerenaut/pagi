@@ -22,7 +22,7 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 
-from components.autoencoder_component import AutoencoderComponent
+from pagi.components.autoencoder_component import AutoencoderComponent
 
 
 class AutoencoderComponentTest(tf.test.TestCase):

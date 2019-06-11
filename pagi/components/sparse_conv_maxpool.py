@@ -19,12 +19,12 @@ import numpy as np
 import tensorflow as tf
 import logging
 
-from components.conv_autoencoder_component import ConvAutoencoderComponent
-from components.summarize_levels import SummarizeLevels
+from pagi.components.conv_autoencoder_component import ConvAutoencoderComponent
+from pagi.components.summarize_levels import SummarizeLevels
 from utils import image_utils
 from utils import layer_utils
 
-from components.sparse_conv_autoencoder_component import SparseConvAutoencoderComponent
+from pagi.components.sparse_conv_autoencoder_component import SparseConvAutoencoderComponent
 
 class SparseConvAutoencoderMaxPoolComponent(SparseConvAutoencoderComponent):
   """
