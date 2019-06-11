@@ -38,6 +38,7 @@ class SparseConvAutoencoderComponent(ConvAutoencoderComponent):
     hparams = ConvAutoencoderComponent.default_hparams()
     hparams.add_hparam('sparsity', 5)
     hparams.add_hparam('sparsity_output_factor', 1.5)
+    return hparams
 
   def _build_filtering(self, training_encoding, testing_encoding):
     """Build filtering/masking for specified encoding."""
