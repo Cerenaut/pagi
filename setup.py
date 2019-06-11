@@ -25,16 +25,27 @@ from setuptools.dist import Distribution
 
 from setuptools import setup, find_packages
 
-REQUIRED_PACKAGES = [
+install_requires = [
     'six >= 1.10.0',
     'numpy == 1.15.0',
-    'scipy == 1.0.0'
+    'scipy == 1.0.0',
     'scikit-learn == 0.19.1',
     'h5py == 2.8.0',
     'mlflow == 0.2.1',
     'matplotlib',
-    'scikit-image'
+    'scikit-image',
+    'wrapt',
+    'click',
+    'PyYAML <=3.13, >=3.10'
 ]
+
+setup_requires = []
+
+extras_require = {
+    'tf': ['tensorflow==1.12.0'],
+    'tf_gpu': ['tensorflow-gpu == 1.12.0'],
+    'tf_prob': ['tensorflow-probability==0.5.0']
+}
 
 class BinaryDistribution(Distribution):
   """This class is needed in order to create OS specific wheels."""
@@ -46,22 +57,29 @@ with open('README.md', 'r') as fh:
   long_description = fh.read()
 
 setup(
-   name='pagi',
-   version='0.1.0',
-   author='ProjectAGI',
-   author_email='info@agi.io',
-   packages=find_packages(),
-   scripts=['bin/pagi'],
-   url='https://github.com/ProjectAGI/pagi',
-   license='Apache 2.0',
-   description='A Tensorflow- based framework for building a selective memory system based on '
-               'convolutional, hierarchical sparse autoencoder-like components.',
-   long_description=long_description,
-   long_description_content_type='text/markdown',
-   install_requires=REQUIRED_PACKAGES,
-   distclass=BinaryDistribution,
-   cmdclass={
-        'pip_pkg': InstallCommandBase,
-    },
-    keywords='tensorflow memory machine learning',
+  name='pagi',
+  version='0.1.0',
+  author='ProjectAGI',
+  author_email='info@agi.io',
+  packages=find_packages(),
+  include_package_data=True,
+  url='https://github.com/ProjectAGI/pagi',
+  license='Apache 2.0',
+  description='A Tensorflow- based framework for building a selective memory system based on '
+              'convolutional, hierarchical sparse autoencoder-like components.',
+  long_description=long_description,
+  long_description_content_type='text/markdown',
+  install_requires=install_requires,
+  setup_requires=setup_requires,
+  extras_require=extras_require,
+  distclass=BinaryDistribution,
+  cmdclass={
+      'pip_pkg': InstallCommandBase,
+  },
+  keywords='tensorflow memory machine learning',
+  entry_points={
+      'console_scripts': [
+          'pagi = pagi.utils.cli:main',
+      ],
+  },
 )
