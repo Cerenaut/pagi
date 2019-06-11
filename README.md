@@ -7,7 +7,8 @@ The objective of this project is to create general purpose Machine Learning algo
 Our philosophy is to build components that can learn unsupervised and rely on local (as opposed to long range) 
 error signals. 
 
-In our terminology a component is a tensorflow graph component - i.e. a fragment of the complete graph. Components may be nested or composited to build a complete system.
+In our terminology a component is a tensorflow graph component - i.e. a fragment of the complete graph. Components may
+be nested or composited to build a complete system.
 
 The codebase:
 - Supports multiple datasets
@@ -15,18 +16,17 @@ The codebase:
 - Default Workflow runs unsupervised component then tests with a classifier
 
 ## Prerequisites
-- TensorFlow 1.10+
-- Python 3+
+- Python 3.6+
+- TensorFlow 1.12
 
-We recommend using [Anaconda](https://www.anaconda.com/) to setup a Python 3.6 / TensorFlow environment for development.
+Setting up the development environment with [Anaconda](https://www.anaconda.com/) is recommended.
 
 ## Installation
-Check out the repository [pagi-framework](https://github.com/ProjectAGI/pagi-framework)
-Documentation is in the folder `/documentation` and template experiment definitions json parameter 
-file along with other future definitions files in the folder `definitions`.
+Clone the repository using `git clone https://github.com/ProjectAGI/pagi.git`, then run `pip install -e .` to install
+the `pagi` package and its dependencies.
 
-Install the requirements into your environment.
-`pip install -r requirements.txt`
+Documentation can be found in the `documentation` directory. A template for the experiment definition file can be found
+in `definitions/default-template.json`.
 
 Get comfy, open your favourite Python editor and away you go.
 
@@ -36,18 +36,18 @@ Get comfy, open your favourite Python editor and away you go.
 ## Usage
 
 ### Overview
-- The entry point is the `main.py` script.
-- It instantiates a `Workflow`, `Component` and `Dataset`, and then runs an experiment.
-- A Workflow describes the setup and conditions of an experiment. The algorithm being tested is represented by the Component, and Datasets are self-explanatory.
-- The base workflow has a run loop that consists of optionally ‘train’ and ‘test’ steps. 
+- The entry point is the `pagi` script, available upon installation
+- It instantiates a `Workflow`, `Component` and `Dataset`, and then runs an experiment
+- A Workflow describes the setup and conditions of an experiment. The algorithm being tested is represented by the Component, and Datasets are self-explanatory
+- The base workflow has a run loop that consists of optionally ‘train’ and ‘test’ steps
 - The default is that ‘train’ trains an unsupervised component inheriting Component. The component transforms the input data into a new feature set that is tested in ‘test’ with a supervised classifier using Harness
 
 ### Running
-- `main.py` provides a number options for how an experiment is run, including setting options for the `Workflow` and for the `Component`
+- `pagi` provides a number options for how an experiment is run, including setting options for the `Workflow` and for the `Component`
 - You can set these options via the command line, or using a `definitions.json` file
 - We recommend the `definitions.json` as most convenient (a template is provided in the `definitions` folder)
-- Default parameters/hyperparameters are defined in the `Component` and `Workflow` classes respectively.
-- There are other default experiment parameters defined in `main.py`
+- Default parameters/hyperparameters are defined in the `Component` and `Workflow` classes respectively
+- There are other default experiment parameters defined in `pagi`
 
 ### Main Patterns
 - Component: A subset of the complete Tensorflow compute graph that acts as an algorithm to test.
@@ -56,7 +56,8 @@ Get comfy, open your favourite Python editor and away you go.
 - Batch types: Tensorflow updates a set of graph vertices in batches. Typically, to update the algorithm completely, many graph ops, with dependent placeholder input and outputs, and summaries - must all be updated simultaneously. The batch-types concept provides a way for components to internalize the complexity of these updates, providing a simpler external interface of supported batch types to choose from.
 
 ### Contributing
-We encourage people to build and experiment with `pagi-framework`. We are happy to receive pull requests to continue to improve and expand the codebase.
+We encourage people to build and experiment with `pagi`. We are happy to receive pull requests to continue to improve
+and expand the codebase.
 
 Our Style Guide can be found here at [./documentation/style-guide](./documentation/style-guide/README.md)
 
