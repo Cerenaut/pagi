@@ -65,7 +65,7 @@ setup(
   include_package_data=True,
   url='https://github.com/ProjectAGI/pagi',
   license='Apache 2.0',
-  description='A Tensorflow- based framework for building a selective memory system based on '
+  description='A Tensorflow-based framework for building a selective memory system based on '
               'convolutional, hierarchical sparse autoencoder-like components.',
   long_description=long_description,
   long_description_content_type='text/markdown',
