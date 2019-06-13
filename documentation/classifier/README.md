@@ -1,4 +1,4 @@
-# classifier_component
+# Classifier
 Various algorithms for supervised classification given a matrix of features and
 a vector of labels. Evaluates the utility of a pretrained unsupervised network.
 
@@ -6,13 +6,8 @@ a vector of labels. Evaluates the utility of a pretrained unsupervised network.
 When training your network:
 
 ```
-# To include from other projects, append path to classifier component
-import sys
-sys.path.append('../')
-sys.path.append('../classifier_component')
-
-from classifier_component.experiment import Experiment
-from classifier_component.classifier import Classifier
+from pagi.classifier.experiment import Experiment
+from pagi.classifier.classifier import Classifier
 ```
 
 Every N batches:
