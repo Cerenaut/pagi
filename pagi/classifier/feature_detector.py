@@ -19,7 +19,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from component import Component
+from pagi.classifier.component import Component
 
 class FeatureDetector(Component):
   """Extension of the basic interface as a feature-detetor, for supervised classification."""

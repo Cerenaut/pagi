@@ -18,8 +18,8 @@
 import numpy as np
 import tensorflow as tf
 
-from utils.tf_utils import tf_get_summary_tag
-from utils.tf_utils import tf_write_scalar_summary
+from pagi.utils.tf_utils import tf_get_summary_tag
+from pagi.utils.tf_utils import tf_write_scalar_summary
 
 class MovingAverageSummaries(object):
   """

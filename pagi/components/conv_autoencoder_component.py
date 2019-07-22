@@ -53,7 +53,7 @@ class ConvAutoencoderComponent(AutoencoderComponent):
                                                         hparams.filters_field_stride, hparams.filters,
                                                         padding='SAME')
   def _create_encoding_shape_4d(self, input_shape):
-    return self.get_encoding_shape_4d(input_shape, self._hparams)
+    return ConvAutoencoderComponent.get_encoding_shape_4d(input_shape, self._hparams)
 
   #
   # intentionally leaving this in case there is a desire to re-instate non square images for conv

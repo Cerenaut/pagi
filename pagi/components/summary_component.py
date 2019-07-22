@@ -27,18 +27,14 @@ from os.path import dirname, abspath
 import numpy as np
 import tensorflow as tf
 
-from utils.dual import DualData
-from utils.layer_utils import activation_fn
-from utils.np_utils import np_write_filters
-from utils.tf_utils import tf_build_stats_summaries
-from utils import image_utils
+from pagi.utils import image_utils
+from pagi.utils.dual import DualData
+from pagi.utils.layer_utils import activation_fn
+from pagi.utils.np_utils import np_write_filters
+from pagi.utils.tf_utils import tf_build_stats_summaries
 
-d = dirname(dirname(dirname(abspath(__file__)))) # Each dirname goes up one
-sys.path.append(d)
-sys.path.append(os.path.join(d, 'classifier_component'))
-
-from classifier_component.component import Component # pylint: disable=C0413
-from components.dual_component import DualComponent
+from pagi.classifier.component import Component
+from pagi.components.dual_component import DualComponent
 
 
 class SummaryComponent(DualComponent):

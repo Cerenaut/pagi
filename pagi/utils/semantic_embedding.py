@@ -21,7 +21,7 @@ import tensorflow as tf
 import csv
 import gensim
 
-from utils.embedding import Embedding
+from pagi.utils.embedding import Embedding
 
 class SemanticEmbedding(Embedding):
   """

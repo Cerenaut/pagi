@@ -226,7 +226,7 @@ def main(dataset, workflow, component, dataset_location, hparams_override, hpara
     if 'experiment-options' in exp_config:
       for key, value in exp_config['experiment-options'].items():
         if not key.endswith('_sweep'):  # Don't override sweep parameters
-          flags[key].value = value
+          flags[key] = value
 
   if track:
     with mlflow.start_run(experiment_id=experiment_id):
