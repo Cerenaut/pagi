@@ -455,7 +455,10 @@ class Workflow(object):
     del feed_dict
 
     # Export all filters to disk
-    self._component.write_filters(session, self._summary_dir)
+    try:
+      self._component.write_filters(session, self._summary_dir)
+    except:
+      logging.warning('Failed to export filters.')
 
   def step_graph(self, component, feed_dict, batch_type, fetches=None, is_update_feed_dict=True):
     """Encapsulate the stuff you need to do before and after a graph step: feed dict and fetches"""

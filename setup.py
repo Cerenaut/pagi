@@ -27,7 +27,7 @@ from setuptools import setup, find_packages
 
 install_requires = [
     'six >= 1.10.0',
-    'numpy == 1.15.0',
+    'numpy == 1.14.5',
     'scipy == 1.0.0',
     'scikit-learn == 0.19.1',
     'h5py == 2.8.0',
@@ -42,9 +42,9 @@ install_requires = [
 setup_requires = []
 
 extras_require = {
-    'tf': ['tensorflow==1.12.0'],
-    'tf_gpu': ['tensorflow-gpu == 1.12.0'],
-    'tf_prob': ['tensorflow-probability==0.5.0']
+    'tf': ['tensorflow==1.10.0'],
+    'tf_gpu': ['tensorflow-gpu == 1.10.0'],
+    'tf_prob': ['tensorflow-probability==0.3.0']
 }
 
 class BinaryDistribution(Distribution):
