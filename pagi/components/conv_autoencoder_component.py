@@ -41,18 +41,19 @@ class ConvAutoencoderComponent(AutoencoderComponent):
   def default_hparams():
     """Builds an HParam object with default hyperparameters."""
     hparams = AutoencoderComponent.default_hparams()
-    hparams.set_hparam('nonlinearity', 'relu')
     hparams.set_hparam('filters', 32)
     hparams.add_hparam('filters_field_width', 6)
     hparams.add_hparam('filters_field_height', 6)
     hparams.add_hparam('filters_field_stride', 3)
     return hparams
 
-  def _create_encoding_shape_4d(self, input_shape):
-    return ConvAutoencoderComponent.get_convolved_shape(input_shape, self._hparams.filters_field_height,
-                                                        self._hparams.filters_field_width,
-                                                        self._hparams.filters_field_stride, self._hparams.filters,
+  def get_encoding_shape_4d(input_shape, hparams):
+    return ConvAutoencoderComponent.get_convolved_shape(input_shape, hparams.filters_field_height,
+                                                        hparams.filters_field_width,
+                                                        hparams.filters_field_stride, hparams.filters,
                                                         padding='SAME')
+  def _create_encoding_shape_4d(self, input_shape):
+    return self.get_encoding_shape_4d(input_shape, self._hparams)
 
   #
   # intentionally leaving this in case there is a desire to re-instate non square images for conv
@@ -107,10 +108,10 @@ class ConvAutoencoderComponent(AutoencoderComponent):
     # Encoding
     # -----------------------------------------------------------------
     conv_filter_shape = [
-        kernel_size[0],        # field w
-        kernel_size[1],        # field h
-        self._input_shape[3],  # input depth
-        self._hparams.filters  # number of filters
+        kernel_size[0],       # field w
+        kernel_size[1],       # field h
+        self._input_shape[3], # input depth
+        self._hparams.filters # number of filters
     ]
 
     # Initialise weights and bias for the filter
@@ -131,7 +132,7 @@ class ConvAutoencoderComponent(AutoencoderComponent):
     # Setup the convolutional layer operation
     # Note: The first kernel is centered at the origin, not aligned to
     # it by its origin.
-    convolved = tf.nn.conv2d(self._input, self._weights, self._strides, padding='SAME', name='convolved')  # zero padded
+    convolved = tf.nn.conv2d(self._input, self._weights, self._strides, padding='SAME', name='convolved') # zero padded
     logging.debug(convolved)
 
     # Bias
@@ -140,7 +141,7 @@ class ConvAutoencoderComponent(AutoencoderComponent):
 
     # Nonlinearity
     # -----------------------------------------------------------------
-    hidden_transfer, _ = activation_fn(convolved_biased, self._hparams.nonlinearity)
+    hidden_transfer, _ = activation_fn(convolved_biased, self._hparams.encoder_nonlinearity)
 
     # External masking
     # -----------------------------------------------------------------
@@ -172,7 +173,7 @@ class ConvAutoencoderComponent(AutoencoderComponent):
     # TODO: If adding bias, make it only 1 per conv location rather than 1 per pixel.
 
     # Reconstruction of the input, batch x 1D
-    decoding_transfer, _ = activation_fn(deconvolved_biased, self._hparams.nonlinearity)
+    decoding_transfer, _ = activation_fn(deconvolved_biased, self._hparams.decoder_nonlinearity)
     decoding_reshape = tf.reshape(decoding_transfer, self._input_shape, name='decoding_reshape')
     logging.debug(decoding_reshape)
     return decoding_reshape
@@ -187,18 +188,18 @@ class ConvAutoencoderComponent(AutoencoderComponent):
     weights_shape = np.shape(weights_values)
     logging.debug('Weights shape: %s', weights_shape)
 
-    filters = weights_shape[3]
     field_depth = weights_shape[2]
-    field_height = self._hparams.filters_field_height
+    filters = weights_shape[3]
     field_width = self._hparams.filters_field_width * field_depth
+    field_height = self._hparams.filters_field_height
 
     weights_transpose = np.transpose(weights_values, axes=[3, 0, 1, 2])
     logging.debug('Weights transpose shape: %s', weights_transpose.shape)
-    weights_reshape = np.reshape(weights_transpose, [filters, field_height, field_width])
+    weights_reshape = np.reshape(weights_transpose, [filters, field_height, field_width * field_depth])
     logging.debug('Weights re shape: %s', weights_reshape.shape)
 
-    file_name = 'filters_' + self._name + '.png'
-    if folder:
+    file_name = "filters_" + self._name + ".png"
+    if folder is not None and folder != "":
       file_name = folder + '/' + file_name
 
     np_write_filters(weights_reshape, [field_height, field_width], file_name)

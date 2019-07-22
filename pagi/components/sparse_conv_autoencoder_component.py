@@ -74,4 +74,3 @@ class SparseConvAutoencoderComponent(ConvAutoencoderComponent):
     testing_filtered = testing_encoding * top_k2_mask
 
     return training_filtered, testing_filtered
-

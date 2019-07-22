@@ -23,6 +23,88 @@ import tensorflow as tf
 from pagi.utils import image_utils
 
 
+def tf_get_summary_tag(batch_type, component_name, summary_name):
+  tag = component_name + '/summaries/' + batch_type + '/' + summary_name
+  return tag
+
+
+def tf_write_scalar_summary(writer, summary_tag, batch, value):
+  """Utility to help write an arbitrary off-graph scalar summary value. Soft-fail on null values."""
+  summary = tf.Summary()
+  if value is not None:
+    summary.value.add(tag=summary_tag, simple_value=value)
+  writer.add_summary(summary, batch)
+  writer.flush()
+
+
+def tf_random_mask(p0, shape):
+  p1 = 1.0 - p0
+  random_mask = np.random.choice([0.0, 1.0], size=shape, p=[p0, p1])
+  return random_mask
+
+
+def tf_normalize_to_k(tensor, k, axis=None):
+    assert len(tensor.shape) >= 2, 'Tensor must be at least 2 dimensions'
+
+    def abs_sum(tensor, axis=None):
+      abs_values = tf.math.abs(tensor)
+      return tf.reduce_sum(abs_values, axis=axis)
+
+    # Compute the scaling factor
+    scaling_factor = k / abs_sum(tensor, axis=axis)
+
+    # Compute the number of dimensions, excluding the batch dimension
+    ndims = len(tensor.shape[1:])
+
+    # Reshape the scaling factor to match the input tensor's shape
+    scaling_factor_shape = [-1] + [1] * ndims
+    scaling_factor_reshape = tf.reshape(scaling_factor, scaling_factor_shape)
+
+    # Scale the input tensor by the scaling factor
+    scaled_tensor = scaling_factor_reshape * tensor
+
+    return scaled_tensor
+
+
+def tf_do_training(batch_type, training_interval, training_batch_count, name='Component'):
+  """Logic for deciding whether to train on a given batch, considering batch type and training batch interval"""
+  fetch_training_op = True
+
+  if batch_type == 'training':
+    t1 = int(training_interval[0])  # default: 0 (at start)
+    t2 = int(training_interval[1])  # default: -1 (forever)
+
+    fetch_training_op = True
+
+    if training_batch_count < t1:
+      fetch_training_op = False  # i.e. T1 > 0 (enabled) and we didn't reach the threshold yet
+
+    if (t2 > 0) and (training_batch_count >= t2):
+      fetch_training_op = False  # i.e. T1 > 0 (enabled) and we didn't reach the threshold yet
+
+  if fetch_training_op:
+    logging.debug(name + ' training ENABLED this batch.')
+  else:
+    logging.debug(name + ' training DISABLED this batch.')
+
+  return fetch_training_op
+
+
+def tf_build_interpolate_distributions(distributions, distribution_mass, num_classes):
+  num_models = len(distributions)
+  assert(num_models == len(distribution_mass))
+  combined = None
+  for i in range(0, num_models):
+    w_i = distribution_mass[i]
+    x_i = distributions[ i ]
+    y_i = (x_i * w_i)
+    if combined is not None:
+      combined = combined + y_i
+    else:
+      combined = y_i
+  return combined
+
+
 def tf_invert(feature, label):
   inverted = 1.0 - feature
   return inverted, label
@@ -43,6 +125,41 @@ def tf_set_min(source, label, tgt_min, current_min=0):
   target = tf_print(target, message="target: ", summarize=280, mute=True)
 
   return target, label
+
+
+def tf_create_optimizer(hparams):
+  # Interesting notes on momentum optimizers, vs Adam:
+  #   https://stackoverflow.com/questions/47168616/is-there-a-momentum-option-for-adam-optimizer-in-keras
+  # Otherwise, we could use the tf.train.MomentumOptimizer and explicitly set the momentum
+  if hparams.optimizer == 'adam':
+    optimizer = tf.train.AdamOptimizer(hparams.learning_rate)
+  elif hparams.optimizer == 'momentum':
+    optimizer = tf.train.MomentumOptimizer(hparams.learning_rate, hparams.momentum,
+                                                 use_nesterov=hparams.momentum_nesterov)
+  elif hparams.optimizer == 'sgd':
+    optimizer = tf.train.GradientDescentOptimizer(hparams.learning_rate)
+  else:
+    raise NotImplementedError('Optimizer not implemented: ' + str(hparams.optimizer))
+
+  return optimizer
+
+
+def tf_build_cross_entropy(labels, softmax):
+  cross_entropy = -tf.reduce_sum(labels * tf.log(softmax), reduction_indices=[1])
+  return cross_entropy
+
+
+def tf_build_perplexity(labels, softmax):
+
+  # Optionally add clipping
+  #epsilon = 1.0e-3
+  #softmax = tf.clip_by_value(softmax, epsilon, 1.0 - epsilon)
+  cross_entropy = tf_build_cross_entropy(labels, softmax)
+  #cross_entropy = -tf.reduce_sum(labels * tf.log(softmax), reduction_indices=[1])
+  cross_entropy_mean = tf.reduce_mean(cross_entropy)
+  perplexity = tf.exp(cross_entropy_mean)
+
+  return perplexity
 
 
 def tf_label_filter(feature, label, label_list):  # pylint: disable=W0613
@@ -88,12 +205,11 @@ def tf_gaussian_kernel(size: int, mean: float, std: float):
 
 
 def tf_build_top_k_mask_op(input_tensor, k, batch_size, input_area):
-
   # Find the "winners". The top k elements in each batch sample. this is
   # what top_k does.
   # ---------------------------------------------------------------------
   input_vector = tf.reshape(input_tensor, [batch_size, input_area])
-  top_values, top_indices = tf.nn.top_k(input_vector, k=k)  
+  _, top_indices = tf.nn.top_k(input_vector, k=k)
 
   # Now the problem is that sparse_to_dense requires a 1d vector, or a
   # vector of n-d indices. So we will need to give it a 1d vector, but
@@ -120,22 +236,23 @@ def tf_build_top_k_mask_op(input_tensor, k, batch_size, input_area):
   # ---------------------------------------------------------------------
   values_vector = tf.ones(batch_size * k, dtype=tf.float32)
   mask_vector_dense = tf.sparse_to_dense(indices_vector, [batch_size * input_area], values_vector, default_value=0, validate_indices=False)
-  batch_mask_vector_op = tf.reshape(mask_vector_dense, [batch_size, input_area])  #, name="rank-mask")
+  batch_mask_vector_op = tf.reshape(mask_vector_dense, [batch_size, input_area]) #, name="rank-mask")
 
   return batch_mask_vector_op
 
 
 def tf_build_top_k_mask_4d_op(input_tensor, k, batch_size, h, w, input_area):
-
+  
   batch_h_w_size = batch_size * h * w
 
-  logging.debug('encoding shape = (%s, %s, %s, %s)', batch_size, h, w, input_area)
+  logging.debug('encoding shape = (%s, %s, %s, %s)',
+                batch_size, h, w, input_area)
 
   # Find the "winners". The top k elements in each batch sample. this is
   # what top_k does.
   # ---------------------------------------------------------------------
   input_vector = tf.reshape(input_tensor, [batch_h_w_size, input_area])
-  top_values, top_indices = tf.nn.top_k(input_vector, k=k) # top_k per input_area
+  _, top_indices = tf.nn.top_k(input_vector, k=k) # top_k per input_area
 
   # Now the problem is that sparse_to_dense requires a 1d vector, or a
   # vector of n-d indices. So we will need to give it a 1d vector, but
@@ -145,8 +262,8 @@ def tf_build_top_k_mask_4d_op(input_tensor, k, batch_size, h, w, input_area):
   # ---------------------------------------------------------------------
   indices_offsets = np.empty([batch_h_w_size * k], dtype=int)
   for b in range(batch_size):  # foreach( batch of k winners )
-    for y in range(h): 
-      for x in range(w): 
+    for y in range(h):
+      for x in range(w):
         for n in range(k):  # foreach( winner in the batch )
           #index = b * k + n  # each b is a vector of k indices
           #offset = b * input_area  # when we offset
@@ -174,6 +291,66 @@ def tf_build_top_k_mask_4d_op(input_tensor, k, batch_size, h, w, input_area):
   # which is 1s for each filled element.
   # ---------------------------------------------------------------------
   values_vector = tf.ones(batch_h_w_size * k, dtype=tf.float32)
+  mask_vector_dense = tf.sparse_to_dense(indices_vector, [batch_h_w_size * input_area], values_vector, default_value=0, validate_indices=False)
+  batch_mask_vector_op = tf.reshape(mask_vector_dense, [batch_size, h, w, input_area]) #, name="rank-mask")
+
+  return batch_mask_vector_op
+
+def tf_build_varying_top_k_mask_4d_op(input_tensor, k_max, batch_size, h, w, input_area, ranking_mask):
+
+  batch_h_w_size = batch_size * h * w
+
+  logging.debug('encoding shape = (%s, %s, %s, %s)',
+                batch_size, h, w, input_area)
+
+  # Find the "winners". The top k elements in each batch sample. this is
+  # what top_k does.
+  # ---------------------------------------------------------------------
+  input_vector = tf.reshape(input_tensor, [batch_h_w_size, input_area])
+  _, top_indices = tf.nn.top_k(input_vector, k=k_max) # top_k per input_area
+
+  # Now the problem is that sparse_to_dense requires a 1d vector, or a
+  # vector of n-d indices. So we will need to give it a 1d vector, but
+  # offset the indices.
+  # Since we have k "winners" per batch item. All k need to be offset by
+  # b * cells.
+  # ---------------------------------------------------------------------
+  indices_offsets = np.empty([batch_h_w_size * k_max], dtype=int)
+  for b in range(batch_size):  # foreach( batch of k winners )
+    for y in range(h):
+      for x in range(w):
+        for n in range(k_max):  # foreach( winner in the batch )
+          #index = b * k + n  # each b is a vector of k indices
+          #offset = b * input_area  # when we offset
+
+          index = b * k_max * w * h \
+                + y * k_max * w     \
+                + x * k_max         \
+                + n
+
+          offset = b * input_area * w * h \
+                 + y * input_area * w     \
+                 + x * input_area
+
+          indices_offsets[index] = offset
+
+  indices_offsets = tf.convert_to_tensor(indices_offsets, dtype=tf.int32)  # convert the vector to a TF vector
+
+  # Now that we have the batch x indices vector, make it a 1d vector.
+  # Then add the offsets
+  # ---------------------------------------------------------------------
+  indices_vector = tf.reshape(top_indices, [batch_h_w_size * k_max])
+  indices_vector = tf.add(indices_vector, indices_offsets)
+
+  # Finally, construct the mask. We need a default vector the the output
+  # which is 1s for each filled element.
+  # ---------------------------------------------------------------------
+  #values_vector = tf.ones(batch_h_w_size * k_max, dtype=tf.float32)
+  ranking_mask_tiled = tf.tile(ranking_mask, [batch_h_w_size, 1])
+  values_vector = tf.reshape(ranking_mask_tiled, [batch_h_w_size * k_max])
+
+  # The values vector is fiddled to adapt to varying k
+  #values_vector = self._dual.get_pl('top_k_mask') # shape: [1, k_max] where 1 or 0
   mask_vector_dense = tf.sparse_to_dense(indices_vector, [batch_h_w_size * input_area], values_vector, default_value=0, validate_indices=False)
   batch_mask_vector_op = tf.reshape(mask_vector_dense, [batch_size, h, w, input_area]) #, name="rank-mask")
 

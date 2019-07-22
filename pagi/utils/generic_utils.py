@@ -15,17 +15,18 @@
 
 """Generic helper methods."""
 
-import os
 import sys
 import math
+import json
 import random
 import inspect
-import logging
 import datetime
 import importlib
 
 import numpy as np
 import tensorflow as tf
+
+from absl import logging
 
 
 def get_summary_dir():
@@ -33,13 +34,15 @@ def get_summary_dir():
   summary_dir = './run/summaries_' + now.strftime("%Y%m%d-%H%M%S") + '/'
   return summary_dir
 
+def get_logging():
+  level = logging.getLogger().getEffectiveLevel()
+  return level
 
 def set_logging(level):
   log_level = parse_logging_level(level)
-  log_format = ("[%(filename)s:%(lineno)s - %(funcName)s() " +
-                "- %(levelname)s] %(message)s")
 
-  logging.basicConfig(format=log_format, level=log_level)
+  logging.set_verbosity(log_level)
+
   logging.debug("Python Version: %s", sys.version)
 
 
@@ -48,8 +51,6 @@ def set_seed(seed):
   random.seed(seed)
   np.random.seed(seed)
   tf.set_random_seed(seed)
-
-  print('Seed:', str(seed))
 
 
 def parse_logging_level(level):
@@ -67,7 +68,7 @@ def parse_logging_level(level):
       'info': logging.INFO,
       'warning': logging.WARNING,
       'error': logging.ERROR,
-      'critical': logging.CRITICAL
+      'fatal': logging.FATAL
   }.get(level, logging.WARNING)
 
 
@@ -84,18 +85,7 @@ def get_module_class_ref(module_name, module_filepath=None):
   """Imports a module by name (or filepath) and gets a reference to first class in the module."""
   module_class = None
 
-  def resolve_filename(dir_path, module_name):
-    filename = os.path.join(dir_path, *module_name.split('.'))
-    if os.path.isdir(filename):
-      filename = os.path.join(filename, '__init__.py')
-    else:
-      filename += '.py'
-    return filename
-
   try:
-    if not module_name.startswith('pagi.'):
-      module_filepath = resolve_filename(os.getcwd(), module_name)
-
     if module_filepath:
       spec = importlib.util.spec_from_file_location(module_name, module_filepath)
       module = importlib.util.module_from_spec(spec)
@@ -113,7 +103,6 @@ def get_module_class_ref(module_name, module_filepath=None):
     raise NotImplementedError('Not implemented: ' + module_name)
 
   return module_class
-
 
 def class_filter(dataset, classes, is_superclass=False, proportion=1.0):
   """
@@ -137,6 +126,18 @@ def class_filter(dataset, classes, is_superclass=False, proportion=1.0):
 
   return output_classes
 
+def load_exp_config(flags):
+  """Load experiment config from JSON, and override tf.FLAGS."""
+  exp_config = None
 
-def summary_name(batch_type):
-  return 'summary_' + batch_type
+  if flags.experiment_def:
+    with open(flags.experiment_def) as config_file:
+      exp_config = json.load(config_file)
+
+    # Override flags from file
+    if 'experiment-options' in exp_config:
+      for key, value in exp_config['experiment-options'].items():
+        if not key.endswith('_sweep'):  # Don't override sweep parameters
+          flags[key].value = value
+
+  return exp_config

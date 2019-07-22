@@ -148,3 +148,36 @@ def print_simple_stats(arr, name):
   max = np.max(arr)
   print('{0} (min,max) = ({1},{2})'.format(name, min, max))
 
+
+def np_accuracy(predicted_labels, labels):
+  correct_predictions = np.equal(labels, predicted_labels)
+  accuracy = np.mean(correct_predictions)
+  return accuracy
+
+def np_uniform(num_classes):
+  uniform_value = 1.0 / float(num_classes)
+  uniform = np.zeros([1, num_classes])
+  uniform.fill(uniform_value)
+  return uniform
+
+def np_interpolate_distributions(distributions, distribution_mass, num_classes):
+  num_models = len(distributions)
+  assert(num_models == len(distribution_mass))
+  combined = np.zeros(num_classes)
+  for i in range(0, num_models):
+    w_i = distribution_mass[i]
+    x_i = distributions[ i ]
+    y_i = (x_i * w_i)
+    combined = combined + y_i
+  return combined
+
+def np_softmax(x):
+    """Compute softmax values for each sets of scores in x."""
+    e_x = np.exp(x - np.max(x))
+    return e_x / e_x.sum(axis=0) # only difference
+
+def np_pad_with(vector, pad_width, iaxis, kwargs):
+  pad_value = kwargs.get('padder', 0)
+  vector[:pad_width[0]] = pad_value
+  vector[-pad_width[1]:] = pad_value
+  return vector

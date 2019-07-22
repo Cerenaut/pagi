@@ -27,16 +27,22 @@ class DualData(object):
   / initialization and copying between them. This class is supposed to make that easier and more systematic.
   """
 
-  def __init__(self, root_name):
+  def __init__(self, root_name=None):
     self._duals = {}
+    self.set_root_name(root_name)
+
+  def get_root_name(self):
+    return self._root_name
+
+  def set_root_name(self, root_name):
     self._root_name = root_name
 
-  def set_op(self, name, op):
+  def set_op(self, name, op, shape=None, default_value=None):
     if name in self._duals.keys():
       dual = self._duals[name]
     else:
-      dual = self.add(name)
-      dual.set_op(op)
+      dual = self.add(name, shape, default_value)
+    dual.set_op(op)
 
   def get_pl(self, name):
     if name in self._duals.keys():
@@ -56,18 +62,31 @@ class DualData(object):
       return dual.get_values()
     return None
 
+  def set_values(self, name, values):
+    if name in self._duals.keys():
+      dual = self._duals[name]
+      dual.set_values(values)
+
+  def set_values_to(self, name, value):
+    if name in self._duals.keys():
+      dual = self._duals[name]
+      dual.set_values_to(value)
+
   def get(self, name):
     if name in self._duals.keys():
       return self._duals[name]
     return None
 
   def add(self, name, shape=None, default_value=None):
-    if name not in self._duals:
+    if not name in self._duals:
       dual = Dual(name, shape, default_value)
       self._duals[name] = dual
     return self._duals[name]
 
   def add_dict(self, feed_dict, names):
+    self.update_feed_dict(feed_dict, names)  # Old overload
+
+  def update_feed_dict(self, feed_dict, names):
     num_names = len(names)
     for i in range(0, num_names):
       name = names[i]
@@ -75,13 +94,15 @@ class DualData(object):
       pl = dual.get_pl()
       values = dual.get_values()
       feed_dict.update({
-        pl: values,
+          pl: values,
       })
 
   def add_fetches(self, fetches, names):
-    """ warning: replaces existing fetches """
     leaf_fetches = self.get_fetches(names)
-    fetches[self._root_name] = leaf_fetches
+    if self._root_name in fetches.keys():
+      fetches[self._root_name].update(leaf_fetches)
+    else:
+      fetches[self._root_name] = leaf_fetches
 
   def get_fetches(self, names):
     fetches = {}
@@ -90,6 +111,8 @@ class DualData(object):
       name = names[i]
       dual = self._duals[name]
       op = dual.get_op()
+      if op is None:
+        logging.debug('Fetch key %s has None value.', name)
       fetches[name] = op
     return fetches
 
@@ -128,6 +151,14 @@ class Dual(object):
 
     return self._shape
 
+  def set_shape(self, shape):
+    self._shape = shape
+
+  def set_pl(self, pl):
+    """Create a new placeholder for this Dual if not already defined in graph."""
+    self._pl = pl
+    return self._pl
+
   def add_pl(self, shape=None, name=None, default=False, dtype=tf.float32):
     """Create a new placeholder for this Dual if not already defined in graph."""
     if self._pl is None:
@@ -153,15 +184,16 @@ class Dual(object):
   def get_values(self):
     return self._values
 
+  def set_values_by_ref(self, values):
+    self._values = values
+
   def set_values(self, values):
     self._values = values.copy()
 
   def set_values_to(self, value):
-    if isinstance(value, str):
-      values = value
-    else:
-      shape = self.get_shape()
-      values = np.zeros(shape)
+    shape = self.get_shape()
+    values = np.zeros(shape)
+    if value != 0.0:
       values.fill(value)
     self._values = values
 
