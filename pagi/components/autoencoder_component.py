@@ -20,17 +20,20 @@ from __future__ import division
 from __future__ import print_function
 
 import logging
-
+import sys
+import os
+from os.path import dirname, abspath
 
 import numpy as np
 import tensorflow as tf
 
-from pagi.components.component import Component
-from pagi.components.summarize_levels import SummarizeLevels
 from pagi.utils.dual import DualData
 from pagi.utils.layer_utils import activation_fn
 from pagi.utils.np_utils import np_write_filters
+from pagi.utils.tf_utils import tf_build_stats_summaries
 from pagi.utils import image_utils
+
+from pagi.classifier.component import Component
 
 
 class AutoencoderComponent(Component):
@@ -46,16 +49,20 @@ class AutoencoderComponent(Component):
     return tf.contrib.training.HParams(
         learning_rate=0.005,
         loss_type='mse',
-        nonlinearity='none',
+        encoder_nonlinearity='none',
+        decoder_nonlinearity='none',
         batch_size=64,
         filters=1024,
         optimizer='adam',
         momentum=0.9,
         momentum_nesterov=False,
         secondary=True,
-        use_bias=True,  # use bias in the encoding weighted sum
-        summarize_level=SummarizeLevels.ALL.value,
-        max_outputs=3  # Number of outputs in TensorBoard
+        use_bias=True,     # use bias in the encoding weighted sum
+        summarize_encoding=False,
+        summarize_decoding=False,
+        summarize_input=False,
+        summarize_weights=False
+
     )
 
   def __init__(self):
@@ -102,7 +109,7 @@ class AutoencoderComponent(Component):
     self._input_values = input_values
     self._encoding_shape = encoding_shape
     if self._encoding_shape is None:
-      self._encoding_shape = self._create_encoding_shape_4d(input_shape)  # .as_list()
+      self._encoding_shape = self._create_encoding_shape_4d(input_shape)  #.as_list()
 
     self._batch_type = None
 
@@ -140,14 +147,12 @@ class AutoencoderComponent(Component):
 
     self._batch_type = tf.placeholder_with_default(input='training', shape=[], name='batch_type')
 
-    self._dual.set_op('inputs', self._input_values)
-
     with tf.name_scope('encoder'):
 
       # Primary ops for encoding
       with tf.name_scope('primary'):
         training_encoding, testing_encoding = self._build_encoding(self._input_values)
-        training_filtered, testing_filtered = self._build_filtering(training_encoding, testing_encoding)
+        training_filtered, testing_filtered = self._build_filtering(training_encoding, testing_encoding )
 
         self._dual.set_op('zs', training_filtered)
 
@@ -163,7 +168,8 @@ class AutoencoderComponent(Component):
               'secondary_encoding_input', shape=input_shape, default_value=1.0).add_pl(default=True)
 
           secondary_training_encoding, secondary_testing_encoding = self._build_encoding(secondary_encoding_input)
-          _, secondary_testing_filtered = self._build_filtering(secondary_training_encoding, secondary_testing_encoding)
+          _, secondary_testing_filtered = self._build_filtering(secondary_training_encoding,
+                                                                secondary_testing_encoding)
 
           # Inference output fork, doesn't accumulate gradients
           # Note: This is the encoding op via placeholder values
@@ -238,7 +244,7 @@ class AutoencoderComponent(Component):
 
     # Nonlinearity
     # -----------------------------------------------------------------
-    hidden_transfer, _ = activation_fn(weighted_sum, self._hparams.nonlinearity)
+    hidden_transfer, _ = activation_fn(weighted_sum, self._hparams.encoder_nonlinearity)
 
     # External masking
     # -----------------------------------------------------------------
@@ -273,7 +279,7 @@ class AutoencoderComponent(Component):
                                         name=(hidden_name + '/decoding_weighted_sum'))
       decoding_biased_sum = tf.nn.bias_add(decoding_weighted_sum, decoding_bias)
 
-      decoding_transfer, _ = activation_fn(decoding_biased_sum, self._hparams.nonlinearity)
+      decoding_transfer, _ = activation_fn(decoding_biased_sum, self._hparams.decoder_nonlinearity)
       decoding_reshape = tf.reshape(decoding_transfer, decoding_shape)
       return decoding_reshape
 
@@ -402,8 +408,7 @@ class AutoencoderComponent(Component):
         'loss': self._dual.get_op('loss'),
         'training': self._dual.get_op('training'),
         'encoding': self._dual.get_op('encoding'),
-        'decoding': self._dual.get_op('decoding'),
-        'inputs': self._dual.get_op('inputs')
+        'decoding': self._dual.get_op('decoding')
     }
 
     if self._summary_training_op is not None:
@@ -413,7 +418,7 @@ class AutoencoderComponent(Component):
     self_fetched = fetched[self._name]
     self._loss = self_fetched['loss']
 
-    names = ['encoding', 'decoding', 'inputs']
+    names = ['encoding', 'decoding']
     self._dual.set_fetches(fetched, names)
 
     if self._summary_training_op is not None:
@@ -432,22 +437,18 @@ class AutoencoderComponent(Component):
   def add_encoding_fetches(self, fetches):
     fetches[self._name] = {
         'encoding': self._dual.get_op('encoding'),
-        'decoding': self._dual.get_op('decoding'),
-        'inputs': self._dual.get_op('inputs')
+        'decoding': self._dual.get_op('decoding')
     }
 
     if self._summary_encoding_op is not None:
       fetches[self._name]['summaries'] = self._summary_encoding_op
 
   def set_encoding_fetches(self, fetched):
-    names = ['encoding', 'decoding', 'inputs']
+    names = ['encoding', 'decoding']
     self._dual.set_fetches(fetched, names)
 
     if self._summary_encoding_op is not None:
       self._summary_values = fetched[self._name]['summaries']
-
-  def get_inputs(self):
-    return self._dual.get_values('inputs')
 
   def get_encoding(self):
     return self._dual.get_values('encoding')
@@ -500,7 +501,7 @@ class AutoencoderComponent(Component):
 
       if self._weights is None:
         self._weights = tf.get_variable('kernel')
-        logging.debug('Weights: %s', self._weights)  # shape=(784, 1024) = input, cells
+        logging.debug('weights: %s', self._weights)  # shape=(784, 1024) = input, cells
 
       weights_values = session.run([self._weights])
       weights_transpose = np.transpose(weights_values)
@@ -517,15 +518,13 @@ class AutoencoderComponent(Component):
   def build_training_summaries(self):
     with tf.name_scope('training'):
       summaries = self._build_summaries()
-      if len(summaries) > 0:
-        self._summary_training_op = tf.summary.merge(summaries)
+      self._summary_training_op = tf.summary.merge(summaries)
       return self._summary_training_op
 
   def build_encoding_summaries(self):
     with tf.name_scope('encoding'):
       summaries = self._build_summaries()
-      if len(summaries) > 0:
-        self._summary_encoding_op = tf.summary.merge(summaries)
+      self._summary_encoding_op = tf.summary.merge(summaries)
       return self._summary_encoding_op
 
   def build_secondary_decoding_summaries(self, scope='secondary_decoding', name=None):
@@ -534,7 +533,7 @@ class AutoencoderComponent(Component):
       scope += 'secondary_decoding_' + name
 
     with tf.name_scope(scope):
-      max_outputs = self._hparams.max_outputs
+      max_outputs = 3
       summaries = []
 
       secondary_decoding = self.get_secondary_decoding_op()
@@ -558,42 +557,42 @@ class AutoencoderComponent(Component):
 
   def _build_summaries(self):
     """Build the summaries for TensorBoard."""
-    max_outputs = self._hparams.max_outputs
+    max_outputs = 3
     summaries = []
-
-    if self._hparams.summarize_level == SummarizeLevels.OFF.value:
-      return summaries
 
     encoding_op = self.get_encoding_op()
     decoding_op = self.get_decoding_op()
 
-    summary_input_shape = image_utils.get_image_summary_shape(self._input_shape)
+    if self._hparams.summarize_encoding:
+      summaries.append(self._summary_hidden(encoding_op, 'encoding', max_outputs))
 
-    input_summary_reshape = tf.reshape(self._input_values, summary_input_shape)
-    decoding_summary_reshape = tf.reshape(decoding_op, summary_input_shape)
+    if self._hparams.summarize_decoding:
+      summary_input_shape = image_utils.get_image_summary_shape(self._input_shape)
+      input_summary_reshape = tf.reshape(self._input_values, summary_input_shape)
 
-    summary_reconstruction = tf.concat([input_summary_reshape, decoding_summary_reshape], axis=1)
-    reconstruction_summary_op = tf.summary.image('reconstruction', summary_reconstruction,
-                                                 max_outputs=max_outputs)
-    summaries.append(reconstruction_summary_op)
+      # Show input on it's own
+      input_alone = False
+      if input_alone:
+        summaries.append(tf.summary.image('input', input_summary_reshape, max_outputs=max_outputs))
 
-    # show input on it's own
-    input_alone = True
-    if input_alone:
-      summaries.append(tf.summary.image('input', input_summary_reshape, max_outputs=max_outputs))
+      # Concatenate input and reconstruction summaries
+      decoding_summary_reshape = tf.reshape(decoding_op, summary_input_shape)
+      summary_reconstruction = tf.concat([input_summary_reshape, decoding_summary_reshape], axis=1)
+      reconstruction_summary_op = tf.summary.image('reconstruction', summary_reconstruction,
+                                                  max_outputs=max_outputs)
+      summaries.append(reconstruction_summary_op)
 
-    summaries.append(self._summary_hidden(encoding_op, 'encoding', max_outputs))
+    if self._hparams.summarize_weights:
+      summaries.append(tf.summary.histogram('weights', self._weights))
+      summaries.append(tf.summary.histogram('encoding', self._dual.get_op('encoding')))
+
+    if self._hparams.summarize_input:
+      input_stats_summary = tf_build_stats_summaries(self._input_values, 'input-stats')
+      summaries.append(input_stats_summary)
 
     # Loss
     loss_summary = tf.summary.scalar('loss', self._dual.get_op('loss'))
     summaries.append(loss_summary)
-
-    # histogram of weights and hidden values
-    summaries.append(tf.summary.histogram('weights', self._weights))
-    summaries.append(tf.summary.histogram('encoding', self._dual.get_op('encoding')))
-
-    # input_stats_summary = tf_build_stats_summaries(self._input_values, 'input-stats')
-    # summaries.append(input_stats_summary)
 
     return summaries
 
