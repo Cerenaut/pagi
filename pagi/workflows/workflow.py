@@ -46,7 +46,8 @@ class Workflow(object):
       train_classes=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
       test_classes=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
       evaluate=False,
-      train=True
+      train=True,
+      training_progress_interval=0
     )
 
   def __init__(self, session, dataset_type, dataset_location, component_type, hparams_override, eval_opts, export_opts,
@@ -74,6 +75,9 @@ class Workflow(object):
 
     self._operations = {}
     self._placeholders = {}
+
+    self._run_options = None
+    self._run_metadata = None
 
     self._setup()
 
@@ -282,6 +286,11 @@ class Workflow(object):
     logging.info('| Training Step | Loss          |   Batch  |   Epoch  |')
     logging.info('|---------------|---------------|----------|----------|')
 
+  def _get_status(self):
+    """Return some string proxy for the losses or errors being optimized"""
+    loss = self._component.get_loss()
+    return loss
+
   def _on_after_training_batch(self, batch, training_step, training_epoch):
     """
     Retrieves and records the loss after training one batch and prints result to the console.
@@ -289,12 +298,46 @@ class Workflow(object):
     NOTE: This is currently too specific for the base Workflow class, as it can only work for an autoencoder.
     """
     # Get and record the loss for this batch
-    loss = self._component.get_loss()
-    logger_utils.log_metric({'mse': loss})
+    status = self._get_status()
+    logger_utils.log_metric({'status': status})
 
     # Output the results to console
-    output = '| {0:>13} | {1:13.4f} | Batch {2}  | Epoch {3}  |'.format(training_step, loss, batch, training_epoch)
-    logging.info(output)
+    do_print = True
+    training_progress_interval = self._opts['training_progress_interval']
+    if training_progress_interval > 0:
+      if (training_step % training_progress_interval) != 0:
+        do_print = False
+
+    if do_print:
+      output = '| {0:>13} | {1:13.4f} | Batch {2}  | Epoch {3}  |'.format(training_step, status, batch, training_epoch)
+      logging.info(output)
+
+  def do_profile(self):
+    file = self.get_profile_file()
+    if file is None:
+      return False
+    return True
+
+  def get_profile_file(self):
+    file = self._opts['profile_file']
+    return file
+
+  def _setup_profiler(self):
+    if self.do_profile():
+      logging.info('Preparing profile info...')
+      self._run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+      self._run_metadata = tf.RunMetadata()
+
+  def _run_profiler(self):
+    if self.do_profile():
+      logging.info('Writing profile info...')
+      profile_file = 'timeline.json'
+
+      # Create the Timeline object, and write it to a json
+      tl = timeline.Timeline(self._run_metadata.step_stats)
+      ctf = tl.generate_chrome_trace_format()
+      with open(profile_file, 'w') as f:
+        f.write(ctf)
 
   def helper_evaluate(self, batch):
     # Prepare inputs and run one batch
@@ -303,6 +346,8 @@ class Workflow(object):
 
   def run(self, num_batches, evaluate, train=True):
     """Run Experiment"""
+
+    self._setup_profiler()
 
     if train:
       training_handle = self._session.run(self._dataset_iterators['training'].string_handle())
@@ -323,21 +368,32 @@ class Workflow(object):
         # Export any experiment-related data
         # -------------------------------------------------------------------------
         if self._export_opts['export_filters']:
-          if (batch == num_batches-1) or ((batch + 1) % self._export_opts['interval_batches'] == 0):
+          if batch == (num_batches - 1) or (batch + 1) % self._export_opts['interval_batches'] == 0:
             self.export(self._session, feed_dict)
 
         if self._export_opts['export_checkpoint']:
-          if (batch == num_batches-1) or ((batch + 1) % num_batches == 0):
+          if batch == (num_batches - 1) or (batch + 1) % self._export_opts['interval_batches'] == 0:
             self._saver.save(self._session, os.path.join(self._summary_dir, 'model.ckpt'), global_step=batch + 1)
 
         # evaluation: every N steps, test the encoding model
         if evaluate:
           if (batch + 1) % self._eval_opts['interval_batches'] == 0:  # defaults to once per batches
             self.helper_evaluate(batch)
+
+      logging.info('Training & optional evaluation complete.')
+
+      self._run_profiler()
+
     elif evaluate:  # train is False
       self.helper_evaluate(0)
     else:
       logging.warning("Both 'train' and 'evaluate' flag are False, so nothing to run.")
+
+  def session_run(self, fetches, feed_dict):
+    if self.do_profile():
+      logging.info('Running batch with profiler enabled.')
+
+    return self._session.run(fetches, feed_dict=feed_dict, options=self._run_options, run_metadata=self._run_metadata)
 
   def _setup_train_feed_dict(self, batch_type, training_handle):
     feed_dict = {
