@@ -19,6 +19,7 @@ import tensorflow as tf
 
 
 def type_activation_fn(fn_type):
+  """Simple switcher for choosing activation functions."""
   if fn_type == 'none':
     fn = None
   elif fn_type == 'relu':

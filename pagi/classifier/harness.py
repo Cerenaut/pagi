@@ -28,7 +28,7 @@ from pagi.classifier.classifier import Classifier
 from pagi.classifier.experiment import Experiment
 
 
-class Harness(object):
+class Harness:
   """
   Evaluates features/labels and performs classification using the Classifier Component.
   """

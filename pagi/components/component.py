@@ -19,8 +19,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-class Component(object):
-  """This is the basic interface for a graph-component that can be executed as a learning algorithm."""
+class Component:
+  """A basic interface for a graph-component that can be executed as a learning algorithm."""
 
   @staticmethod
   def default_hparams():
@@ -31,20 +31,15 @@ class Component(object):
 
   def update_feed_dict(self, feed_dict, batch_type='training'):
     """Add items to the feed dict to run a batch."""
-    pass
 
   def add_fetches(self, fetches, batch_type='training'):
     """Add graph ops to the fetches dict so they are evaluated."""
-    pass
 
   def set_fetches(self, fetched, batch_type='training'):
     """Store results of graph ops in the fetched dict so they are available as needed."""
-    pass
 
-  def build_summaries(self, batch_types=None, scope=None):
+  def build_summaries(self, batch_types=None, max_outputs=3, scope=None):
     """Build any summaries needed to debug the module."""
-    pass
 
   def write_summaries(self, step, writer, batch_type='training'):
     """Write any summaries needed to debug the module."""
-    pass

@@ -15,10 +15,10 @@
 
 """Dataset generated with random process."""
 
-
-from pagi.datasets.dataset import Dataset
 import numpy as np
 import tensorflow as tf
+
+from pagi.datasets.dataset import Dataset
 
 
 class ArtficialDataset(Dataset):
@@ -80,9 +80,3 @@ class ArtficialDataset(Dataset):
 
     dataset = tf.data.Dataset.from_tensor_slices((images, labels))
     return dataset
-
-
-
-
-
-

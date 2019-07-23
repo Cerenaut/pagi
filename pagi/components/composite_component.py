@@ -23,6 +23,7 @@ from pagi.components.summary_component import SummaryComponent
 
 
 class CompositeComponent(SummaryComponent):
+  """The base class for building composite components (i.e. containing sub components)."""
 
   def __init__(self):
     super().__init__()
@@ -82,3 +83,6 @@ class CompositeComponent(SummaryComponent):
   def write_summaries(self, step, writer, batch_type='training'):
     for name, comp in self._sub_components.items():
       comp.write_summaries(step, writer, self._select_batch_type(batch_type, name))
+
+  def _build_summaries(self, batch_type, max_outputs=3):
+    pass

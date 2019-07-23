@@ -19,7 +19,7 @@ import numpy as np
 import tensorflow as tf
 
 
-class DualData(object):
+class DualData:
   """
   DualData is a concept that arises from our need to recurrently feed data into TensorFlow graphs, that can't be
   recurrent.
@@ -105,6 +105,7 @@ class DualData(object):
       fetches[self._root_name] = leaf_fetches
 
   def get_fetches(self, names):
+    """Get the fetches dict."""
     fetches = {}
     num_names = len(names)
     for i in range(0, num_names):
@@ -126,7 +127,7 @@ class DualData(object):
       dual.set_values(values)
 
 
-class Dual(object):
+class Dual:
   """
   This is a single tensor concept, that needs to exist in 2 places (TF graph, and off-graph).
   """

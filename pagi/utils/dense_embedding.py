@@ -13,13 +13,11 @@
 # limitations under the License.
 # ==============================================================================
 
-"""DenseEmbedding"""
+"""DenseEmbedding class."""
 
 import logging
+
 import numpy as np
-import tensorflow as tf
-import csv
-import gensim
 
 from pagi.utils.embedding import Embedding
 
@@ -30,14 +28,15 @@ class DenseEmbedding(Embedding):
 
   def get_num_bits(self, num_tokens):
     num_bits = 1
-    while (1<<num_bits) < num_tokens:
-      print('num_tokens: ', num_tokens, ' num_bits: ', num_bits, ' (1<<num_bits): ', (1<<num_bits) )
+    while (1 << num_bits) < num_tokens:
+      print('num_tokens: ', num_tokens, ' num_bits: ', num_bits, ' (1<<num_bits): ', (1 << num_bits))
       num_bits += 1
-    print('num_tokens: ', num_tokens, ' num_bits: ', num_bits, ' (1<<num_bits): ', (1<<num_bits) )
-    assert((1<<num_bits) > num_tokens)
+    print('num_tokens: ', num_tokens, ' num_bits: ', num_bits, ' (1<<num_bits): ', (1 << num_bits))
+    assert (1 << num_bits) > num_tokens
     return num_bits
 
   def get_unique_tokens(self, corpus_files, eos):
+    """Parse the unique tokens from the corpus."""
     data = self.read_corpus_files(corpus_files, eos)
 
     tokens = set()
@@ -46,12 +45,12 @@ class DenseEmbedding(Embedding):
       for word in sentence:
         tokens.add(word)
 
-    # convert the set to the list 
-    unique_tokens = (list(tokens)) 
+    # convert the set to the list
+    unique_tokens = (list(tokens))
     return unique_tokens
 
   def create_matrix(self, unique_tokens, num_bits):
-    """Create a 2-d matrix of the embeddings. The first dim is words or tokens. The 2nd is the embedding vector"""    
+    """Create a 2-d matrix of the embeddings. The first dim is words or tokens. The 2nd is the embedding vector"""
     num_tokens = len(unique_tokens)
     num_draws = 1  # TODO allow multiple random shuffles
     height = num_tokens
@@ -62,7 +61,7 @@ class DenseEmbedding(Embedding):
 
     # Each row is a different token (word)
     for row in range(num_tokens):
-      token = unique_tokens[row]
+      _ = unique_tokens[row]
       np.zeros(width)
 
       # convert the row id into a bit pattern
@@ -70,12 +69,12 @@ class DenseEmbedding(Embedding):
       print('Row: ', row, ' bits: ', binary_str)
 
       # Double the bits by including not(bits) to give constant density
-      # e.g. 
-      # Row:  9502  
-      # bits:  [1. 0. 0. 1. 0. 1. 0. 0. 0. 1. 1. 1. 1. 0. 
+      # Example:
+      # Row:  9502
+      # bits:  [1. 0. 0. 1. 0. 1. 0. 0. 0. 1. 1. 1. 1. 0.
       #         0. 1. 1. 0. 1. 0. 1. 1. 1. 0. 0. 0. 0. 1.]
 
-      # Each 
+      # Each
       for bit in range(num_bits):
         value = int(binary_str[bit])
         matrix[row][bit] = value
@@ -94,13 +93,18 @@ class DenseEmbedding(Embedding):
     embedding_shape = [num_bits, 2]
     return embedding_shape
 
-  def create(self, corpus_files, model_file, shape=[10,10], sparsity=20, eos='<end>'):
+  def create(self, corpus_files, model_file, shape=None, sparsity=20, eos='<end>'):  # pylint: disable=arguments-differ
+    """Create embedding."""
+    del sparsity
 
     self.clear()
 
+    if shape is None:
+      shape = [10, 10]
+
     unique_tokens = self.get_unique_tokens(corpus_files, eos)
 
-    # Now generate a random matrix for each 
+    # Now generate a random matrix for each
     num_tokens = len(unique_tokens)
     #print( "found ", num_tokens, " tokens" )
 
@@ -108,21 +112,21 @@ class DenseEmbedding(Embedding):
 
     matrix = self.create_matrix(unique_tokens, num_bits)
     self.write(model_file, matrix, unique_tokens)
-    logging.info('Wrote model to file: ' + model_file)
+    logging.info('Wrote model to file: %s', model_file)
 
     embedding_shape = self.get_embedding_shape(num_bits)  #[num_bits, 2]
     return embedding_shape
 
   def write(self, file_path, matrix, tokens):
-
+    """Write to disk."""
     num_tokens = len(tokens)
 
     with open(file_path, mode='w') as file:
 
-      content = ''  
+      content = ''
       for row in range(num_tokens):
         token = tokens[row]
-        values = matrix[row]    
+        values = matrix[row]
         num_cols = len(values)
 
         if row == 0:
@@ -133,7 +137,6 @@ class DenseEmbedding(Embedding):
           value = values[col]
           row_values += (str(value) + ' ')
 
-        content += ('\n' + row_values) 
+        content += ('\n' + row_values)
 
       file.write(content)
-

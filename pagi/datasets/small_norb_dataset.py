@@ -74,6 +74,7 @@ class SmallNORBDataset(Dataset):
 
   def _dataset(self, split, directory, images_file, labels_file, preprocess):
     """Download and parse smallNORB dataset."""
+    del split
 
     images_file = self._download(directory, images_file)
     labels_file = self._download(directory, labels_file)

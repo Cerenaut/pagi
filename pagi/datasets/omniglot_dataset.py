@@ -84,8 +84,9 @@ class OmniglotDataset(Dataset):
 
     return classes
 
-  def _dataset(self, directory, images_file):
+  def _dataset(self, directory, images_file, preprocess=False):
     """Download and parse Omniglot dataset."""
+    del preprocess
 
     images_folder = self._download(directory, images_file)
 

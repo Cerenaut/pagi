@@ -22,7 +22,6 @@ import tensorflow as tf
 # The following functions can be used to convert a value to a type compatible
 # with tf.Example.
 # From https://www.tensorflow.org/tutorials/load_data/tf_records
-from pagi.utils.tf_utils import tf_print
 
 
 def bytes_feature(value):
@@ -54,11 +53,11 @@ def write_subset(filename, dataset_shape, vals, labels, keep_fn):
         continue
       example = tf.train.Example(features=tf.train.Features(
           feature={
-            'height': int64_feature(dataset_shape[2]),
-            'width': int64_feature(dataset_shape[1]),
-            'depth': int64_feature(dataset_shape[3]),
-            'label': int64_feature(label),
-            'image_raw': bytes_feature(image.tostring())}))
+              'height': int64_feature(dataset_shape[2]),
+              'width': int64_feature(dataset_shape[1]),
+              'depth': int64_feature(dataset_shape[3]),
+              'label': int64_feature(label),
+              'image_raw': bytes_feature(image.tostring())}))
       writer.write(example.SerializeToString())
       count += 1
 
@@ -74,11 +73,11 @@ def read_subset(filename, dataset_shape):
 
     # Create a dictionary describing the features.
     image_feature_description = {
-      'height': tf.FixedLenFeature([], tf.int64),
-      'width': tf.FixedLenFeature([], tf.int64),
-      'depth': tf.FixedLenFeature([], tf.int64),
-      'label': tf.FixedLenFeature([], tf.int64),
-      'image_raw': tf.FixedLenFeature([], tf.string),
+        'height': tf.FixedLenFeature([], tf.int64),
+        'width': tf.FixedLenFeature([], tf.int64),
+        'depth': tf.FixedLenFeature([], tf.int64),
+        'label': tf.FixedLenFeature([], tf.int64),
+        'image_raw': tf.FixedLenFeature([], tf.string),
     }
 
     # Parse the input tf.Example proto using the dictionary above.
@@ -105,6 +104,7 @@ def read_subset(filename, dataset_shape):
 
 
 def generate_filenames(name, directory, data_file):
+  """Generates a list of the shard filenames available in the directory."""
   dirpath = os.path.join(directory, name)
   filepath = os.path.join(dirpath, data_file)
   if not tf.gfile.Exists(dirpath):
@@ -114,5 +114,5 @@ def generate_filenames(name, directory, data_file):
     sharded_file_format = data_file + '-*'
     tfrecords_list = glob.glob(os.path.join(dirpath, sharded_file_format))
     return tfrecords_list
-  else:
-    return filepath
+
+  return filepath

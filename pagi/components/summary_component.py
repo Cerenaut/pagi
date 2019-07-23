@@ -13,27 +13,14 @@
 # limitations under the License.
 # ==============================================================================
 
-"""AutoencoderComponent class."""
+"""SummaryComponent class."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import logging
-import sys
-import os
-from os.path import dirname, abspath
-
-import numpy as np
 import tensorflow as tf
 
-from pagi.utils import image_utils
-from pagi.utils.dual import DualData
-from pagi.utils.layer_utils import activation_fn
-from pagi.utils.np_utils import np_write_filters
-from pagi.utils.tf_utils import tf_build_stats_summaries
-
-from pagi.classifier.component import Component
 from pagi.components.dual_component import DualComponent
 
 
@@ -89,4 +76,4 @@ class SummaryComponent(DualComponent):
 
   def _build_summaries(self, batch_type, max_outputs=3):
     """Build summaries for this batch type. Can be same for all batch types."""
-    return None
+    raise NotImplementedError('_build_summaries should be implemented in child components.')

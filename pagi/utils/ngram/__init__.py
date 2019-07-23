@@ -13,16 +13,14 @@
 # limitations under the License.
 # ==============================================================================
 
-"""FeatureDetector interface."""
+"""Globally-importable n-gram utils."""
 
 from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
-from pagi.components.component import Component
-
-class FeatureDetector(Component):
-  """Extension of the basic interface as a feature-detetor, for supervised classification."""
-
-  def get_features(self, batch_type='training'):
-    """Return the features produced in the last batch."""
+from .ngram import NGram
+from .add_one_ngram import AddOneNGram
+from .backoff_ngram import BackOffNGram
+from .ngram_generator import NGramGenerator
+from .kneser_ney_ngram import KneserNeyNGram
+from .interpolated_ngram import InterpolatedNGram
+from .kneser_ney_base_ngram import KneserNeyBaseNGram

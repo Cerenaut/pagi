@@ -56,6 +56,7 @@ class MNISTDataset(Dataset):
         self._directory, 't10k-images-idx3-ubyte', 't10k-labels-idx1-ubyte', preprocess)
 
   def preprocess(self, image, preprocess):
+    del preprocess
     return image
 
   def _dataset(self, directory, images_file, labels_file, preprocess):

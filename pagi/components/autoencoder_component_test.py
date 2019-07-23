@@ -28,7 +28,8 @@ from pagi.components.autoencoder_component import AutoencoderComponent
 class AutoencoderComponentTest(tf.test.TestCase):
   """Unit tests for Autoencoder Component class."""
 
-  def setUp(self):
+  def setUp(self):  # pylint: disable=invalid-name
+    """Setup the unit tests."""
     # use this hparam to override the Component's default hparams in the tests
     self.hparams_override = {
         "learning_rate": 0.05,
@@ -68,7 +69,7 @@ class AutoencoderComponentTest(tf.test.TestCase):
         fetched = sess.run(fetches, feed_dict)
 
         component.set_fetches(fetched, batch_type)
-        loss = component._dual.get_op('loss')
+        loss = component.get_dual().get_op('loss')
 
         self.assertEqual(loss.get_shape(), ())
         self.assertEqual(len(trainable_vars), 3)

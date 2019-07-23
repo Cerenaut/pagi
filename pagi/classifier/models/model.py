@@ -23,7 +23,7 @@ import abc
 
 from sklearn.model_selection import learning_curve
 
-class Model(object):
+class Model:
   """
   The base class for building a classifcation models and running inference
   on them.

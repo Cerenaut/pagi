@@ -13,26 +13,14 @@
 # limitations under the License.
 # ==============================================================================
 
-"""AutoencoderComponent class."""
+"""DualComponent class."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import logging
-import sys
-import os
-from os.path import dirname, abspath
-
-import numpy as np
-import tensorflow as tf
-
-from pagi.utils import image_utils
 from pagi.utils.dual import DualData
-from pagi.utils.layer_utils import activation_fn
-from pagi.utils.np_utils import np_write_filters
-from pagi.utils.tf_utils import tf_build_stats_summaries
-from pagi.classifier.component import Component
+from pagi.components.component import Component
 
 
 class DualComponent(Component):
@@ -44,8 +32,8 @@ class DualComponent(Component):
   def __init__(self, name=None):
     super().__init__()
 
-    #self._name = name  # Maybe discovered after instantiation time
     self._dual = DualData(name)
+    # self._name = name  # Maybe discovered after instantiation time
 
   @property
   def name(self):

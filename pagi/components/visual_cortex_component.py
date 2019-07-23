@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""EpisodicComponent class."""
+"""VisualCortexComponent class."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -243,6 +243,7 @@ class VisualCortexComponent(FeatureDetector):
     """
     The output of the component is taken from one of the subcomponents, depending on hparams.
     """
+    del batch_type
     comp = self.get_sub_component(self._hparams.output_features)
     features = comp.get_features()
     return features

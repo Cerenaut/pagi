@@ -29,10 +29,10 @@ class SmallOmniglotDataset(OmniglotDataset):
     self._num_test_classes = 156
     self._num_classes = 292
 
-  def get_train(self):
+  def get_train(self, preprocess=False):
     """tf.data.Dataset object for small Omniglot training data."""
-    return self._dataset(self._directory, 'images_background_small1')
+    return self._dataset(self._directory, 'images_background_small1', preprocess)
 
-  def get_test(self):
+  def get_test(self, preprocess=False):
     """tf.data.Dataset object for small Omniglot test data."""
-    return self._dataset(self._directory, 'images_background_small2')
+    return self._dataset(self._directory, 'images_background_small2', preprocess)

@@ -17,15 +17,8 @@
 
 import os
 import glob
-import zipfile
-import tempfile
-import logging
 
-import numpy as np
-import scipy.io as spio
 import tensorflow as tf
-
-from six.moves import urllib
 
 from pagi.datasets.dataset import Dataset
 
@@ -62,14 +55,14 @@ class AffNISTDataset(Dataset):
     def parse_function(record):
       image_dim = self.IMAGE_SIZE_PX
       features = tf.parse_single_example(
-        record,
-        features={
-            'image_raw': tf.FixedLenFeature([], tf.string),
-            'label': tf.FixedLenFeature([], tf.int64),
-            'height': tf.FixedLenFeature([], tf.int64),
-            'width': tf.FixedLenFeature([], tf.int64),
-            'depth': tf.FixedLenFeature([], tf.int64)
-        })
+          record,
+          features={
+              'image_raw': tf.FixedLenFeature([], tf.string),
+              'label': tf.FixedLenFeature([], tf.int64),
+              'height': tf.FixedLenFeature([], tf.int64),
+              'width': tf.FixedLenFeature([], tf.int64),
+              'depth': tf.FixedLenFeature([], tf.int64)
+          })
 
       # Convert from a scalar string tensor (whose single string has
       # length image_pixel*image_pixel) to a uint8 tensor with shape
@@ -91,6 +84,9 @@ class AffNISTDataset(Dataset):
     return dataset
 
   def _generate_filenames(self, split, directory, data_file):
+    """Generates a list of the shard filenames available in the directory."""
+    del split
+
     dirpath = os.path.join(directory, self.name)
     filepath = os.path.join(dirpath, data_file)
     if not tf.gfile.Exists(dirpath):
@@ -100,5 +96,5 @@ class AffNISTDataset(Dataset):
       sharded_file_format = data_file + '-*'
       tfrecords_list = glob.glob(os.path.join(dirpath, sharded_file_format))
       return tfrecords_list
-    else:
-      return filepath
+
+    return filepath

@@ -19,16 +19,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
 import logging
 
-import numpy as np
-import tensorflow as tf
-
-from pagi.utils import tf_utils
 from pagi.workflows.workflow import Workflow
 
 class CompositeWorkflow(Workflow):
+  """The base workflow for working with composite components."""
+
   TEST_DECODES = []
 
   def _init_test_decodes(self):
@@ -50,6 +47,7 @@ class CompositeWorkflow(Workflow):
     self._build_test_decodes_summaries()
 
   def _add_composite_decodes(self, name, composite_decoder):
+    """Calculate the number of decoders required. This takes into account any nested components."""
     num_decoders = 1
 
     try:
@@ -57,7 +55,7 @@ class CompositeWorkflow(Workflow):
 
       if num_sub_components > 1:
         num_decoders = num_sub_components
-    except:
+    except AttributeError:
       pass
 
     for _ in range(num_decoders):

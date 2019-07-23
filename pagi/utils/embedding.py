@@ -13,23 +13,21 @@
 # limitations under the License.
 # ==============================================================================
 
-"""Embedding"""
+"""Embedding class."""
 
 import logging
-import numpy as np
-import tensorflow as tf
-import csv
-import gensim
 
-class Embedding(object):
+import numpy as np
+
+
+class Embedding:
   """
-  Embedding transforms a large number of disjoint classes (e.g. words) into a dense or sparse combination of fewer dimensions.
-  Good embeddings have other features represented in the relationships between classes.
+  Embedding transforms a large number of disjoint classes (e.g. words) into a dense or sparse combination
+  of fewer dimensions. Good embeddings have other features represented in the relationships between classes.
 
   self._matrix = np.zeros([num_rows, num_cols]) The embedding
-  self._keyIndex = {} given key, what's the index (reverse lookup)
-  self._indexKey = [] array where index has relevant key
-
+  self._key_index = {} given key, what's the index (reverse lookup)
+  self._index_key = [] array where index has relevant key
   """
 
   def __init__(self):
@@ -41,34 +39,34 @@ class Embedding(object):
     clean_words = []
     for word in words:
       clean_word = word.strip()
-      if len(clean_word) > 0:
+      if clean_word:
         clean_words.append(clean_word)
     return clean_words
 
   def read_corpus_files(self, corpus_files, eos='<end>'):
-    #print("files: ", corpus_files)
-    #import nltk.data
+    """Read corpus data from disk."""
+    # print("files: ", corpus_files)
+    # import nltk.data
 
     text = ''
-    for i in range(len(corpus_files)):
-      file = corpus_files[i]
-      print( "reading file", file)
+    for file in corpus_files:
+      print("reading file", file)
       corpus = open(file).read()
-      #print( "corp ", corpus)
+      # print( "corp ", corpus)
       text = text + corpus + '\n'
 
-    #sent_tokenize_list = nltk.sent_tokenize(all_text)
+    # sent_tokenize_list = nltk.sent_tokenize(all_text)
     sentences = text.splitlines()
-    #tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')    
-    #sentences = tokenizer.tokenize(all_text)
-    #print( "Here3 sentences", sentences)
-    #sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
-    #sentenized = doc_set.body.apply(sent_detector.tokenize)
-    #sentences = itertools.chain.from_iterable(sentenized.tolist()) # just to flatten
+    # tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+    # sentences = tokenizer.tokenize(all_text)
+    # print( "Here3 sentences", sentences)
+    # sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
+    # sentenized = doc_set.body.apply(sent_detector.tokenize)
+    # sentences = itertools.chain.from_iterable(sentenized.tolist()) # just to flatten
 
     data = []
     for sentence in sentences:
-      # #result += [nltk.word_tokenize(sent)]
+      # result += [nltk.word_tokenize(sent)]
       # words = sentence.strip().split(' ')
       # clean_words = []
       # for word in words:
@@ -76,20 +74,21 @@ class Embedding(object):
       #   if len(clean_word) > 0:
       #     clean_words.append(clean_word)
       clean_words = Embedding.tokenize_sentence(sentence)
-      if len(clean_words) > 0:
+      if clean_words:
         clean_words.append(eos) # add EOS marker, which is needed to embed this token
         data.append(clean_words)
-    #print( "result: ", data)
+    # print("result: ", data)
     return data
 
   def create(self, corpus_files, model_file, size=100, eos='<end>'):
+    pass
 
-    self.clear()
+    # self.clear()
 
     # data = self.read_corpus_files(corpus_files, eos)
 
     # # https://machinelearningmastery.com/develop-word-embeddings-python-gensim/
-    # model = gensim.models.Word2Vec(data, size=size, min_count=1)    
+    # model = gensim.models.Word2Vec(data, size=size, min_count=1)
     # words = list(model.wv.vocab)
     # #print(" WORDS len: ", len(words))
     # model.wv.save_word2vec_format(model_file, binary=False)
@@ -115,16 +114,17 @@ class Embedding(object):
     dual.set_op(op)
 
   def check(self):
-    num_keys = len(self._indexKey)
+    """Checks overlap."""
+    num_keys = len(self._index_key)
     num_cols = len(self._matrix[0])
 
     min_overlap = num_cols * num_cols
     max_overlap = 0
-    #sum_overlap = 0
-    #max_bits = 0
+    # sum_overlap = 0
+    # max_bits = 0
 
     for i in range(num_keys):
-      print('i=',i, 'max overlap ', max_overlap)
+      print('i=', i, 'max overlap ', max_overlap)
       for j in range(num_keys):
         if i == j:
           continue
@@ -138,28 +138,28 @@ class Embedding(object):
         for k in range(num_cols):
           x_i = self._matrix[i][k]
           x_j = self._matrix[j][k]
-          if (x_i > 0.0):
-            if (x_j > 0.0):
+          if x_i > 0.0:
+            if x_j > 0.0:
               overlap = overlap +1
             bits = bits +1
 
-        #print('i=',i,' j=',j, 'max overlap ', max_overlap, 'overlap ', overlap, ' max bits: ', max_bits)
+        # print('i=',i,' j=',j, 'max overlap ', max_overlap, 'overlap ', overlap, ' max bits: ', max_bits)
 
-        #sum_overlap += overlap
+        # sum_overlap += overlap
         min_overlap = min(min_overlap, overlap)
         max_overlap = max(max_overlap, overlap)
-        #max_bits = max(max_bits, bits)
+        # max_bits = max(max_bits, bits)
 
-    #mean_overlap = float(sum_overlap) / float(max_bits)
+    # mean_overlap = float(sum_overlap) / float(max_bits)
 
     print('Overlap min: ', min_overlap, ' of ', max_bits)
     print('Overlap max: ', max_overlap, ' of ', max_bits)
-    #print('Overlap avg: ', mean_overlap, ' of ', max_bits)
+    # print('Overlap avg: ', mean_overlap, ' of ', max_bits)
 
   def clear(self):
     self._matrix = None
-    self._keyIndex = None # key: word, value: index
-    self._indexKey = None # key: index, value: word
+    self._key_index = None # key: word, value: index
+    self._index_key = None # key: index, value: word
 
   def has_keys(self, keys):
     num_keys = len(keys)
@@ -171,30 +171,30 @@ class Embedding(object):
     return True
 
   def has_key(self, key):
-    if key not in self._keyIndex:
-      logging.debug('Key "' + key + '" not found.')
+    if key not in self._key_index:
+      logging.debug('Key "%s" not found.', key)
       return False
     return True
 
   def get_keys(self):
     # keys = []
-    # num_keys = len(self._indexKey)
+    # num_keys = len(self._index_key)
     # for i in range(num_keys):
-    #   keys.append(self._indexKey[i])
-    return self._indexKey
+    #   keys.append(self._index_key[i])
+    return self._index_key
 
   def get_num_keys(self):
-    return len(self._indexKey)
+    return len(self._index_key)
 
   def get_num_values(self):
     return self._matrix.shape[1]
 
   def get_index(self, key):
-    index = self._keyIndex[key]
+    index = self._key_index[key]
     return index
 
   def get_key(self, index):
-    key = self._indexKey[index]
+    key = self._index_key[index]
     return key
 
   def get_value(self, key, index):
@@ -208,13 +208,14 @@ class Embedding(object):
     return values
 
   def read(self, file_path):
+    """Read data from file."""
     self.clear()
 
     with open(file_path, 'rt') as file:
 
       rows = file.readlines()
-      num_file_rows = len(rows)
-      #print( "found ", num_file_rows , " rows ")
+      # num_file_rows = len(rows)
+      # print("found", num_file_rows, "rows")
 
       row = rows[0]
       cols = row.split(' ')
@@ -222,11 +223,11 @@ class Embedding(object):
       num_rows = int(cols[0])
       num_cols = int(cols[1])
 
-      #print( "embedding has ", num_rows , " x ", num_cols)
+      # print("embedding has", num_rows , "x", num_cols)
 
       self._matrix = np.zeros([num_rows, num_cols])
-      self._keyIndex = {}
-      self._indexKey = []#np.zeros(num_rows)
+      self._key_index = {}
+      self._index_key = []#np.zeros(num_rows)
 
       for r in range(num_rows):
         row = rows[r+1]
@@ -235,16 +236,14 @@ class Embedding(object):
         key = values[0].strip()
 
         for c in range(num_cols):
-          pass
-
-          str_val = values[c+1]
-          #print( 'row: ', row_index, " key: ", key, " val: ", str_val, ' c', c)
+          str_val = values[c + 1]
+          # print('row:', row_index, "key:", key, "val:", str_val, 'c', c)
           value = float(str_val)
           self._matrix[r][c] = value
 
-        self._keyIndex.update({key:r})
-        self._indexKey.append(key)#[row_index] = key
+        self._key_index.update({key: r})
+        self._index_key.append(key)#[row_index] = key
 
-        #logging.info('Key: ' + str(key) + ' index: ' + str(row_index))
+        # logging.info('Key: ' + str(key) + ' index: ' + str(row_index))
 
     return True

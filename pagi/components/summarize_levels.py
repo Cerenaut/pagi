@@ -1,3 +1,5 @@
+"""Enum describing the summarization levels."""
+
 from enum import Enum
 
 

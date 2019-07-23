@@ -16,12 +16,12 @@
 """MovingAverageSummaries class"""
 
 import numpy as np
-import tensorflow as tf
 
 from pagi.utils.tf_utils import tf_get_summary_tag
 from pagi.utils.tf_utils import tf_write_scalar_summary
 
-class MovingAverageSummaries(object):
+
+class MovingAverageSummaries:
   """
   Manages the online calculation of accuracy statistics and summaries.
   Helper for Workflows that need this feature.
@@ -31,7 +31,7 @@ class MovingAverageSummaries(object):
     self._summaries = {}
 
   def clear(self):
-    for key,val in self._summaries.items():
+    for _, val in self._summaries.items():
       val.clear()
 
   def set_interval(self, key, interval):
@@ -45,7 +45,7 @@ class MovingAverageSummaries(object):
     return summary
 
   def update(self, key, value, writer=None, batch_type='training', batch=None, prefix='global'):
-
+    """Update the moving average."""
     summary = self.lazy_get_summary(key)
     average = summary.update(value)
 
@@ -58,7 +58,7 @@ class MovingAverageSummaries(object):
 
     return average
 
-class MovingAverageSummary(object):
+class MovingAverageSummary:
   """
   Manages the online calculation of one statistic and summaries.
   Helper for Workflows that need this feature.
@@ -72,10 +72,10 @@ class MovingAverageSummary(object):
     self.samples = []
 
   def update(self, value):
-    # Track per-batch accuracy & compute average accuracy ever N batches
+    """Track per-batch accuracy & compute average accuracy ever N batches."""
     if value is None:
       return None
-    
+
     mean = None
     if len(self.samples) == self.interval:
       mean = np.mean(self.samples)

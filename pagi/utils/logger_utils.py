@@ -34,7 +34,7 @@ def log_param(hparams):
 
     for key, value in hparams.items():
       mlflow.log_param(key, value)
-  except:
+  except:  # pylint: disable=bare-except
     pass
 
 
@@ -45,5 +45,5 @@ def log_metric(metrics):
 
     for key, value in metrics.items():
       mlflow.log_metric(key, value)
-  except:
+  except:  # pylint: disable=bare-except
     pass

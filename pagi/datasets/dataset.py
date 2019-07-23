@@ -18,7 +18,7 @@
 import abc
 
 
-class Dataset(object):
+class Dataset:
   """Dataset base class based on tf.data."""
 
   def __init__(self, name, directory, dataset_shape,
@@ -44,7 +44,7 @@ class Dataset(object):
     raise NotImplementedError('Not implemented')
 
   def get_classes_by_superclass(self, superclass, proportion=1.0):
-    raise NotImplementedError('Not implemented')
+    pass
 
   @property
   def name(self):

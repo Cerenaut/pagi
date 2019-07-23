@@ -38,7 +38,7 @@ def degrade_image(image, label=None, degrade_type='horizontal', degrade_value=0,
   image_shape = image.shape.as_list()
   image_size = np.prod(image_shape[1:])
 
-  if degrade_type == 'vertical' or degrade_type == 'horizontal':
+  if degrade_type in ['vertical', 'horizontal']:
 
     # # Miconi method
     # image = tf.reshape(image, [-1, image_size])
@@ -129,10 +129,11 @@ def add_image_noise_flat(image, label=None, minval=0., noise_type='sp_binary', n
 
 
 def add_image_noise(image, label=None, minval=0., noise_type='sp_binary', noise_factor=0.2):
+  """Add image noise."""
   image_shape = image.shape.as_list()
   image_size = np.prod(image_shape[1:])
 
-  if noise_type == 'sp_float' or noise_type == 'sp_binary':
+  if noise_type in ['sp_float', 'sp_binary']:
     noise_mask = np.zeros(image_size)
     noise_mask[:int(noise_factor * image_size)] = 1
     noise_mask = tf.convert_to_tensor(noise_mask, dtype=tf.float32)
@@ -149,8 +150,7 @@ def add_image_noise(image, label=None, minval=0., noise_type='sp_binary', noise_
   else:
     if noise_type == 'none':
       raise RuntimeWarning("Add noise has been called despite noise_type of 'none'.")
-    else:
-      raise NotImplementedError("The noise_type '{0}' is not supported.".format(noise_type))
+    raise NotImplementedError("The noise_type '{0}' is not supported.".format(noise_type))
 
   if label is None:
     return corrupted_image
@@ -164,10 +164,11 @@ def pad_image(image, padding, mode='constant'):
   return tf.pad(image, paddings, mode)
 
 
-def shift_image(image, shift):
+def shift_image(image, shift_):
+  """Shift the image."""
   shifts = []
-  for i in np.arange(-shift, shift + 1):
-    for j in np.arange(-shift, shift + 1):
+  for i in np.arange(-shift_, shift_ + 1):
+    for j in np.arange(-shift_, shift_ + 1):
       shifts.append([i, j])
 
   # Get random shift from list of potential shifts
@@ -199,18 +200,24 @@ def load_transform(image_path, angle=0., s=(0, 0), size=(20, 20)):
   """Transforms an image by rotating, shifting, resizing and inverting."""
   # Load the image
   original = imread(image_path, flatten=True)
+
   # Rotate the image
-  rotated = np.maximum(np.minimum(rotate(original, angle=angle, cval=1.), 1.), 0.)
+  rotated = rotate(original, angle=angle, cval=1.)
+  rotated = np.maximum(np.minimum(rotated, 1.), 0.) # pylint: disable=assignment-from-no-return
+
   # Shift the image
-  shifted = shift(rotated, shift=s)
+  shift(rotated, shift=s)
+
   # Resize the image
   resized = np.asarray(imresize(rotated, size=size),
                        dtype=np.float32) / 255  # Note here we coded manually as np.float32, it should be tf.float32
+
   # Invert the image
   inverted = 1. - resized
   max_value = np.max(inverted)
   if max_value > 0:
     inverted /= max_value
+
   return inverted
 
 
@@ -373,7 +380,7 @@ def add_op_images(dual, op_names, shape, max_outputs, summaries):
   else:
     op_shapes = shape
 
-  for op_name, op_shape in zip(op_names, op_shapes):
+  for op_name, _ in zip(op_names, op_shapes):
     op = dual.get_op(op_name)
     if op is not None:
       reshaped = tf.reshape(op, shape)
@@ -412,8 +419,8 @@ def concat_images(images, batch_size, images_shape=None):
   """
   concat_image = None
 
-  if len(images) == 0:
-    return
+  if not images:
+    return concat_image
 
   if images_shape is None:
     images_shape = get_image_summary_shape(images[0].get_shape().as_list())

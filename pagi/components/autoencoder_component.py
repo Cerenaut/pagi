@@ -20,9 +20,6 @@ from __future__ import division
 from __future__ import print_function
 
 import logging
-import sys
-import os
-from os.path import dirname, abspath
 
 import numpy as np
 import tensorflow as tf
@@ -33,7 +30,7 @@ from pagi.utils.np_utils import np_write_filters
 from pagi.utils.tf_utils import tf_build_stats_summaries
 from pagi.utils import image_utils
 
-from pagi.classifier.component import Component
+from pagi.components.component import Component
 
 
 class AutoencoderComponent(Component):
@@ -152,7 +149,7 @@ class AutoencoderComponent(Component):
       # Primary ops for encoding
       with tf.name_scope('primary'):
         training_encoding, testing_encoding = self._build_encoding(self._input_values)
-        training_filtered, testing_filtered = self._build_filtering(training_encoding, testing_encoding )
+        training_filtered, testing_filtered = self._build_filtering(training_encoding, testing_encoding)
 
         self._dual.set_op('zs', training_filtered)
 
@@ -317,8 +314,8 @@ class AutoencoderComponent(Component):
   def _build_loss_fn(self, target, output):
     if self._hparams.loss_type == 'mse':
       return tf.losses.mean_squared_error(target, output)
-    else:
-      raise NotImplementedError('Loss function not implemented: ' + str(self._hparams.loss_type))
+
+    raise NotImplementedError('Loss function not implemented: ' + str(self._hparams.loss_type))
 
   # OP ACCESS ------------------------------------------------------------------
   def get_encoding_op(self):
@@ -372,20 +369,20 @@ class AutoencoderComponent(Component):
   def get_features(self, batch_type='training'):  # pylint: disable=W0613
     return self._dual.get_values('encoding')
 
-  def build_summaries(self, batch_types=None, scope=None):
+  def build_summaries(self, batch_types=None, max_outputs=3, scope=None):
     """Builds all summaries."""
     if not scope:
       scope = self._name + '/summaries/'
     with tf.name_scope(scope):
       for batch_type in batch_types:
         if batch_type == 'training':
-          self.build_training_summaries()
+          self.build_training_summaries(max_outputs)
         if batch_type == 'encoding':
-          self.build_encoding_summaries()
+          self.build_encoding_summaries(max_outputs)
         if self._hparams.secondary and batch_type == 'secondary_encoding':
           pass
         if self._hparams.secondary and batch_type == 'secondary_decoding':
-          self.build_secondary_decoding_summaries()
+          self.build_secondary_decoding_summaries(max_outputs)
 
   def write_summaries(self, step, writer, batch_type='training'):
     """Write the summaries fetched into _summary_values"""
@@ -474,6 +471,7 @@ class AutoencoderComponent(Component):
     pass
 
   def add_secondary_decoding_fetches(self, fetches):
+    """Add fetches for secondary decoding mode."""
     fetches[self._name] = {
         'secondary_decoding': self._dual.get_op('secondary_decoding')
     }
@@ -515,25 +513,24 @@ class AutoencoderComponent(Component):
 
       np_write_filters(weights_transpose, [filter_height, filter_width], file_name=file_name)
 
-  def build_training_summaries(self):
+  def build_training_summaries(self, max_outputs=3):
     with tf.name_scope('training'):
-      summaries = self._build_summaries()
+      summaries = self._build_summaries(max_outputs)
       self._summary_training_op = tf.summary.merge(summaries)
       return self._summary_training_op
 
-  def build_encoding_summaries(self):
+  def build_encoding_summaries(self, max_outputs=3):
     with tf.name_scope('encoding'):
-      summaries = self._build_summaries()
+      summaries = self._build_summaries(max_outputs)
       self._summary_encoding_op = tf.summary.merge(summaries)
       return self._summary_encoding_op
 
-  def build_secondary_decoding_summaries(self, scope='secondary_decoding', name=None):
+  def build_secondary_decoding_summaries(self, scope='secondary_decoding', max_outputs=3, name=None):
     """Builds secondary decoding summaries."""
     if name:
       scope += 'secondary_decoding_' + name
 
     with tf.name_scope(scope):
-      max_outputs = 3
       summaries = []
 
       secondary_decoding = self.get_secondary_decoding_op()
@@ -555,9 +552,8 @@ class AutoencoderComponent(Component):
 
       return self._summary_secondary_decoding_op
 
-  def _build_summaries(self):
+  def _build_summaries(self, max_outputs=3):
     """Build the summaries for TensorBoard."""
-    max_outputs = 3
     summaries = []
 
     encoding_op = self.get_encoding_op()
@@ -579,7 +575,7 @@ class AutoencoderComponent(Component):
       decoding_summary_reshape = tf.reshape(decoding_op, summary_input_shape)
       summary_reconstruction = tf.concat([input_summary_reshape, decoding_summary_reshape], axis=1)
       reconstruction_summary_op = tf.summary.image('reconstruction', summary_reconstruction,
-                                                  max_outputs=max_outputs)
+                                                   max_outputs=max_outputs)
       summaries.append(reconstruction_summary_op)
 
     if self._hparams.summarize_weights:

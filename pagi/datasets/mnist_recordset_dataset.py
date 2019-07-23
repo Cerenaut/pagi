@@ -44,10 +44,7 @@ class MNISTRecordsetDataset(Dataset):
 
   def _dataset(self, directory, data_file):
     """Load MNIST from a TFRecordset specified by 'filepath'."""
-
     filenames = generate_filenames(self.name, directory, data_file)
     dataset_shape = self.shape
     dataset = read_subset(filenames, dataset_shape)
     return dataset
-
-

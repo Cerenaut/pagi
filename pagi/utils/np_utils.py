@@ -78,7 +78,7 @@ def np_dropout(mask, rate=0.1):
 
 
 def np_write_array_list_as_image(base_folder, arr, name):
-
+  """Write array list as an image."""
   filetype = 'png'
   rel_filepath = name + '.' + filetype
   filepath = os.path.join(base_folder, rel_filepath)
@@ -144,13 +144,13 @@ def np_write_filters(filters, filter_shape, file_name='filters.png'):
 
 
 def print_simple_stats(arr, name):
-  min = np.min(arr)
-  max = np.max(arr)
-  print('{0} (min,max) = ({1},{2})'.format(name, min, max))
+  min_ = np.min(arr)
+  max_ = np.max(arr)
+  print('{0} (min, max) = ({1},{2})'.format(name, min_, max_))
 
 
 def np_accuracy(predicted_labels, labels):
-  correct_predictions = np.equal(labels, predicted_labels)
+  correct_predictions = np.equal(labels, predicted_labels)  # pylint: disable=assignment-from-no-return
   accuracy = np.mean(correct_predictions)
   return accuracy
 
@@ -162,21 +162,22 @@ def np_uniform(num_classes):
 
 def np_interpolate_distributions(distributions, distribution_mass, num_classes):
   num_models = len(distributions)
-  assert(num_models == len(distribution_mass))
+  assert num_models == len(distribution_mass)
   combined = np.zeros(num_classes)
   for i in range(0, num_models):
     w_i = distribution_mass[i]
-    x_i = distributions[ i ]
+    x_i = distributions[i]
     y_i = (x_i * w_i)
     combined = combined + y_i
   return combined
 
 def np_softmax(x):
-    """Compute softmax values for each sets of scores in x."""
-    e_x = np.exp(x - np.max(x))
-    return e_x / e_x.sum(axis=0) # only difference
+  """Compute softmax values for each sets of scores in x."""
+  e_x = np.exp(x - np.max(x))
+  return e_x / e_x.sum(axis=0) # only difference
 
 def np_pad_with(vector, pad_width, iaxis, kwargs):
+  del iaxis
   pad_value = kwargs.get('padder', 0)
   vector[:pad_width[0]] = pad_value
   vector[-pad_width[1]:] = pad_value

@@ -114,9 +114,9 @@ def run_experiment(flags, exp_config):
 
   # Training with Tensorflow
   # -------------------------------------------------------------------------
-  with tf.Graph().as_default():
+  with tf.Graph().as_default():  # pylint: disable=no-context-manager
     config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
+    config.gpu_options.allow_growth = True  # pylint: disable=no-member
     session = tf.Session(config=config)
 
     if TbDebug.TB_DEBUG:
@@ -151,6 +151,7 @@ def run_experiment(flags, exp_config):
                               component_hparams_override, classifier_opts, export_opts, opts=workflow_opts,
                               summarize=flags['summarize'], seed=flags['seed'], summary_dir=flags['summary_dir'],
                               checkpoint_opts=checkpoint_opts)
+    workflow.setup()
 
     # Start experiment to train the model and evaluating every N batches
     # -------------------------------------------------------------------------
@@ -207,6 +208,7 @@ def run_experiment(flags, exp_config):
 @click.option('--tb_debug', type=bool, default=False,
               help='Debug with tensorboard debugger.')
 
+# pylint: disable=unused-argument
 def main(dataset, workflow, component, dataset_location, hparams_override, hparams_sweep, workflow_opts_sweep,
          logging, checkpoint, checkpoint_load_scope, checkpoint_frozen_scope, summary_dir, experiment_def, seed,
          batches, experiment_id, summarize, track, tb_debug):

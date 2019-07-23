@@ -34,20 +34,20 @@ from pagi.utils.tf_utils import tf_label_filter
 from pagi.classifier.harness import Harness
 
 
-class Workflow(object):
-  """Workflow base class."""
+class Workflow:
+  """The base workflow for working with components."""
 
   @staticmethod
   def default_opts():
     """Builds an HParam object with default workflow options."""
     return tf.contrib.training.HParams(
-      superclass=False,
-      class_proportion=1.0,
-      train_classes=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
-      test_classes=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
-      evaluate=False,
-      train=True,
-      training_progress_interval=0
+        superclass=False,
+        class_proportion=1.0,
+        train_classes=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+        test_classes=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+        evaluate=False,
+        train=True,
+        training_progress_interval=0
     )
 
   def __init__(self, session, dataset_type, dataset_location, component_type, hparams_override, eval_opts, export_opts,
@@ -79,16 +79,13 @@ class Workflow(object):
     self._run_options = None
     self._run_metadata = None
 
-    self._setup()
-
   def _test_consistency(self):
     """
     If multiple params relate to each other, make sure they are set consistently
-    - prevent hard to diagnose runtime issues
+    - prevent hard to diagnose runtime issues. This should be overrided in child workflows as necessary.
     """
-    pass    # Override in child workflows
 
-  def _setup(self):
+  def setup(self):
     """Setup the experiment"""
 
     # Get the model's default HParams
@@ -142,7 +139,7 @@ class Workflow(object):
       # Dataset for training
       train_dataset = self._dataset.get_train()
       # Filter dataset to keep specified classes only
-      if self._opts['train_classes'] and len(self._opts['train_classes']) > 0:
+      if self._opts['train_classes']:
         the_classes = class_filter(self._dataset, self._opts['train_classes'],
                                    self._opts['superclass'],
                                    self._opts['class_proportion'])
@@ -156,7 +153,7 @@ class Workflow(object):
       # Evaluation dataset (i.e. no shuffling, pre-processing)
       eval_train_dataset = self._dataset.get_train()
       # Filter test set to keep specified labels only --> all evaluation (train and test)
-      if self._opts['test_classes'] and len(self._opts['test_classes']) > 0:
+      if self._opts['test_classes']:
         the_classes = class_filter(self._dataset, self._opts['test_classes'],
                                    self._opts['superclass'],
                                    self._opts['class_proportion'])
@@ -167,7 +164,7 @@ class Workflow(object):
 
       eval_test_dataset = self._dataset.get_test()
       # Filter test set to keep specified labels only --> all evaluation (train and test)
-      if self._opts['test_classes'] and len(self._opts['test_classes']) > 0:
+      if self._opts['test_classes']:
         the_classes = class_filter(self._dataset, self._opts['test_classes'],
                                    self._opts['superclass'],
                                    self._opts['class_proportion'])
@@ -220,8 +217,8 @@ class Workflow(object):
       init_scope = []
 
       scope_list = self._checkpoint_opts['checkpoint_load_scope'].split(',')
-      for i in range(len(scope_list)):
-        scope_list[i] = scope_list[i].lstrip().rstrip()
+      for i, scope in enumerate(scope_list):
+        scope_list[i] = scope.lstrip().rstrip()
 
       global_variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
 
@@ -396,6 +393,7 @@ class Workflow(object):
     return self._session.run(fetches, feed_dict=feed_dict, options=self._run_options, run_metadata=self._run_metadata)
 
   def _setup_train_feed_dict(self, batch_type, training_handle):
+    del batch_type
     feed_dict = {
         self._placeholders['dataset_handle']: training_handle
     }
@@ -457,7 +455,7 @@ class Workflow(object):
     # Export all filters to disk
     try:
       self._component.write_filters(session, self._summary_dir)
-    except:
+    except AttributeError:
       logging.warning('Failed to export filters.')
 
   def step_graph(self, component, feed_dict, batch_type, fetches=None, is_update_feed_dict=True):

@@ -15,9 +15,10 @@
 
 """SparseConvAutoencoderMaxPoolComponent class."""
 
+import logging
+
 import numpy as np
 import tensorflow as tf
-import logging
 
 from pagi.components.conv_autoencoder_component import ConvAutoencoderComponent
 from pagi.components.summarize_levels import SummarizeLevels
@@ -73,9 +74,9 @@ class SparseConvAutoencoderMaxPoolComponent(SparseConvAutoencoderComponent):
         encoding_shape[2] = int(np.ceil(encoding_shape[2] / self._hparams.pool_strides))
       elif padding == 'VALID':
         encoding_shape[1] = int(np.ceil(
-          ((encoding_shape[1] - self._hparams.pool_size) / self._hparams.pool_strides) + 1))
+            ((encoding_shape[1] - self._hparams.pool_size) / self._hparams.pool_strides) + 1))
         encoding_shape[2] = int(np.ceil(
-          ((encoding_shape[2] - self._hparams.pool_size) / self._hparams.pool_strides) + 1))
+            ((encoding_shape[2] - self._hparams.pool_size) / self._hparams.pool_strides) + 1))
       else:
         raise RuntimeError('Padding type unrecognized')
 
@@ -150,15 +151,14 @@ class SparseConvAutoencoderMaxPoolComponent(SparseConvAutoencoderComponent):
       names = ['encoding_pooled', 'encoding_unpooled']
     self._dual.set_fetches(fetched, names)
 
-  def _build_summaries(self):
+  def _build_summaries(self, max_outputs=3):
 
     summaries = []
     if self._hparams.summarize_level == SummarizeLevels.OFF.value:
       return summaries
 
-    summaries = super()._build_summaries()
-
     max_outputs = self._hparams.max_outputs
+    summaries = super()._build_summaries(max_outputs)
 
     if self.get_encoding_pooled_op() is not None:
       encoding_pooled = self.get_encoding_pooled_op()
@@ -220,23 +220,23 @@ class SparseConvAutoencoderMaxPoolComponent(SparseConvAutoencoderComponent):
     return pooled, mask
 
   def unpool(self, pooled_tensor, pool_size=None, pool_strides=None, indices=None, pre_pooled_shape=None):
-    """
-    Performs unpooling on an existing pooled tensor.
+    """Performs unpooling on an existing pooled tensor."""
+    del indices
 
-    Note: unpool_with_argmax uses indices/scatter_nd, and currently
-    does not work with batch_size > 1. Keeping it here as it might come in
-    handy later if we ever need to restore the true max positions.
-    """
     if pool_size is None:
       pool_size = self._hparams.pool_size
     if pool_strides is None:
       pool_strides = self._hparams.pool_strides
 
-    if self._hparams.use_unpooling == 'argmax':
+    if self._hparams.use_unpooling == 'argmax':  # pylint: disable=no-else-raise
       raise RuntimeWarning('Unpool with argmax is currently not working. See comments in code.')
 
-      unpooled = layer_utils.unpool_with_argmax(pooled_tensor, indices,
-                                                ksize=[1, pool_size, pool_size, 1])
+      # TODO: unpool_with_argmax uses indices/scatter_nd, and currently
+      # does not work with batch_size > 1. Keeping it here as it might come in
+      # handy later if we ever need to restore the true max positions.
+
+      # unpooled = layer_utils.unpool_with_argmax(pooled_tensor, indices,
+      #                                           ksize=[1, pool_size, pool_size, 1])
 
     elif self._hparams.use_unpooling == 'fixed':
       unpooled = layer_utils.unpool_with_fixed(pooled_tensor, pool_strides, mode='zeros')

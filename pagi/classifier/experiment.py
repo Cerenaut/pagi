@@ -24,7 +24,7 @@ import logging
 
 import h5py
 
-class Experiment(object):
+class Experiment:
   """
   The Experiment class represents a generic experiment that contains any
   set of features and labels. It includes options to export and import this

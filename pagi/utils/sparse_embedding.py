@@ -13,13 +13,11 @@
 # limitations under the License.
 # ==============================================================================
 
-"""SparseEmbedding"""
+"""SparseEmbedding class."""
 
 import logging
+
 import numpy as np
-import tensorflow as tf
-import csv
-import gensim
 
 from pagi.utils.embedding import Embedding
 
@@ -28,9 +26,12 @@ class SparseEmbedding(Embedding):
   Produces a sparse and highly orthogonal embedding for each token.
   """
 
-  def create(self, corpus_files, model_file, shape=[10,10], sparsity=20, eos='<end>'):
-
+  def create(self, corpus_files, model_file, shape=None, sparsity=20, eos='<end>'):  # pylint: disable=arguments-differ
+    """"Create embedding."""
     self.clear()
+
+    if shape is None:
+      shape = [10, 10]
 
     data = self.read_corpus_files(corpus_files, eos)
 
@@ -40,10 +41,10 @@ class SparseEmbedding(Embedding):
       for word in sentence:
         tokens.add(word)
 
-    # convert the set to the list 
-    unique_tokens = (list(tokens)) 
+    # convert the set to the list
+    unique_tokens = (list(tokens))
 
-    # Now generate a random matrix for each 
+    # Now generate a random matrix for each
     num_tokens = len(unique_tokens)
     #print( "found ", num_tokens, " tokens" )
     num_rows = num_tokens
@@ -51,25 +52,25 @@ class SparseEmbedding(Embedding):
 
     matrix = np.zeros([num_rows, num_cols])
     for row in range(num_tokens):
-      token = unique_tokens[row]
+      _ = unique_tokens[row]
       np.zeros(num_cols)
-      for bit in range(sparsity):
+      for _ in range(sparsity):
         col = np.random.randint(num_cols)
         matrix[row][col] = 1.0
 
     self.write(model_file, matrix, unique_tokens)
-    logging.info('Wrote model to file: ' + model_file)
+    logging.info('Wrote model to file: %s', model_file)
 
   def write(self, file_path, matrix, tokens):
-
+    """Write embedding to disk."""
     num_tokens = len(tokens)
 
     with open(file_path, mode='w') as file:
 
-      content = ''  
+      content = ''
       for row in range(num_tokens):
         token = tokens[row]
-        values = matrix[row]    
+        values = matrix[row]
         num_cols = len(values)
 
         if row == 0:
@@ -80,7 +81,6 @@ class SparseEmbedding(Embedding):
           value = values[col]
           row_values += (str(value) + ' ')
 
-        content += ('\n' + row_values) 
+        content += ('\n' + row_values)
 
       file.write(content)
-

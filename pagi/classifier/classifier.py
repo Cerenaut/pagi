@@ -34,7 +34,7 @@ from pagi.classifier.models.logistic_regression_model import LogisticRegressionM
 from pagi.classifier.models.svm_model import SvmModel
 
 
-class Classifier(object):
+class Classifier:
   """
   Creates an instance of the classification model for training and inference,
   handles the preprocessing of the data and the allows easy access to the

@@ -47,6 +47,7 @@ class ConvAutoencoderComponent(AutoencoderComponent):
     hparams.add_hparam('filters_field_stride', 3)
     return hparams
 
+  @staticmethod
   def get_encoding_shape_4d(input_shape, hparams):
     return ConvAutoencoderComponent.get_convolved_shape(input_shape, hparams.filters_field_height,
                                                         hparams.filters_field_width,
