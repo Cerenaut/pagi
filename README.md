@@ -2,7 +2,7 @@
 A framework based on TensorFlow, developed and maintained by [ProjectAGI](https://agi.io), for building a selective memory system based on convolutional, hierarchical sparse autoencoder-like components.
 
 The objective of this project is to create general purpose Machine Learning algorithms inspired by neuroscience.
-Our philosophy is to build components that can learn unsupervised and rely on local (as opposed to long range) 
+Our philosophy is to build components that can learn in an unsupervised manner and rely on local (as opposed to long range) 
 error signals. 
 
 Terminology:
