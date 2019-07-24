@@ -237,3 +237,6 @@ def main(dataset, workflow, component, dataset_location, hparams_override, hpara
       run_experiment(flags, exp_config)
   else:
     run_experiment(flags, exp_config)
+
+if __name__ == '__main__':
+  main()  # pylint: disable=no-value-for-parameter

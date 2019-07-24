@@ -47,7 +47,8 @@ class Workflow:
         test_classes=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
         evaluate=False,
         train=True,
-        training_progress_interval=0
+        training_progress_interval=0,
+        profile_file=None
     )
 
   def __init__(self, session, dataset_type, dataset_location, component_type, hparams_override, eval_opts, export_opts,
@@ -353,7 +354,6 @@ class Workflow:
       self._on_before_training_batches()
 
       for batch in range(self._last_step, num_batches):
-
         training_step = self._session.run(tf.train.get_global_step(self._session.graph))
         training_epoch = self._dataset.get_training_epoch(self._hparams.batch_size, training_step)
 
