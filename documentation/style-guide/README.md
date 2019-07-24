@@ -34,12 +34,18 @@ instructions above to install `pylint`
 - PyCharm: No easy plugin available due to PyCharm's default linting. Follow these [instructions](https://pylint.readthedocs.io/en/latest/user_guide/ide-integration.html#pylint-in-pycharm) 
 from the Pylint documentation to integrate with pylint
 
+## Pre-commmit Hooks
+We use the `pre-commit` package alongside the config file `.pre-commit-config.yaml` to enforce styling rules on newly committed code. The package should be installed automatically as a dependencing when you first install `pagi`. You then need to run `pre-commit install` to install the hooks in your local Git repository.
+
 ### Command-line Usage
 You can also use `pylint` using the command-line, instead of integrating with your editor/IDE of choice.
 
 ```
 # Run pylint on files in the all directories within the project
 pylint **/*.py
+
+# Run pylint on a specific Python module (must contain __init__.py)
+pylint parent_module/child_module
 
 # Optionally pass a custom rcfile
 pylint --rcfile=/path/to/pylintrc **/*.py
