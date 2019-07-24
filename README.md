@@ -1,25 +1,23 @@
 # Project AGI Experimental Framework
-
-The [ProjectAGI](https://agi.io) Tensorflow framework for building a selective memory system based on convolutional, 
-hierarchical sparse autoencoder-like components.
+A framework based on TensorFlow, developed and maintained by [ProjectAGI](https://agi.io), for building a selective memory system based on convolutional, hierarchical sparse autoencoder-like components.
 
 The objective of this project is to create general purpose Machine Learning algorithms inspired by neuroscience.
 Our philosophy is to build components that can learn unsupervised and rely on local (as opposed to long range) 
 error signals. 
 
-In our terminology a component is a tensorflow graph component - i.e. a fragment of the complete graph. Components may
+Terminology:
+- A **dataset** is a representation of a dataset using the `tf.data.Dataset` APIs
+- A **component** is a TensorFlow graph component - i.e. a fragment of the complete graph. Components may
 be nested or composited to build a complete system.
+- A **workflow** is the tooling required to train and evaluate components (e.g. training/eval loops, feed_dict building)
 
-The codebase:
-- Supports multiple datasets
-- Supports multiple components such as convolutional k-sparse autoencoder
-- Default Workflow runs unsupervised component then tests with a classifier
+The framework comes built-in with multiple datasets (e.g. MNIST, Omniglot, smallNORB), multiple components (e.g. convolutional k-sparse autoencoder), and the base workflow to train and test components. These foundations can be built upon in your own custom projects through class inheritance.
 
 ## Prerequisites
 - Python 3.6+
-- TensorFlow 1.12
+- TensorFlow 1.10
 
-Setting up the development environment with [Anaconda](https://www.anaconda.com/) is recommended.
+We recommend setting up your development environment using [Anaconda](https://www.anaconda.com/).
 
 ## Installation
 Clone the repository using `git clone https://github.com/ProjectAGI/pagi.git`, then run `pip install -e .` to install
