@@ -189,6 +189,9 @@ class Embedding:
   def get_num_values(self):
     return self._matrix.shape[1]
 
+  def get_matrix(self):
+    return self._matrix
+
   def get_index(self, key):
     index = self._key_index[key]
     return index

@@ -15,7 +15,7 @@
 
 """KneserNeyNGram class."""
 
-from pagi.utils.ngram.kne import AddOneNGram
+from pagi.utils.ngram import KneserNeyBaseNGram
 
 
 # pylint: disable-all

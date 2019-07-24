@@ -15,12 +15,10 @@
 
 """affNIST dataset using the tf.data module."""
 
-import os
-import glob
-
 import tensorflow as tf
 
 from pagi.datasets.dataset import Dataset
+from pagi.utils.data_utils import generate_filenames
 
 
 class AffNISTDataset(Dataset):
@@ -49,8 +47,9 @@ class AffNISTDataset(Dataset):
 
   def _dataset(self, split, directory, data_file):
     """Download and parse affNIST dataset."""
+    del split
 
-    filenames = self._generate_filenames(split, directory, data_file)
+    filenames = generate_filenames(self.name, directory, data_file)
 
     def parse_function(record):
       image_dim = self.IMAGE_SIZE_PX
@@ -82,19 +81,3 @@ class AffNISTDataset(Dataset):
     dataset = dataset.map(parse_function, num_parallel_calls=4)
 
     return dataset
-
-  def _generate_filenames(self, split, directory, data_file):
-    """Generates a list of the shard filenames available in the directory."""
-    del split
-
-    dirpath = os.path.join(directory, self.name)
-    filepath = os.path.join(dirpath, data_file)
-    if not tf.gfile.Exists(dirpath):
-      raise ValueError('Directory not found.')
-
-    if data_file.startswith('sharded_'):
-      sharded_file_format = data_file + '-*'
-      tfrecords_list = glob.glob(os.path.join(dirpath, sharded_file_format))
-      return tfrecords_list
-
-    return filepath
