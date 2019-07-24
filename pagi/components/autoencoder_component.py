@@ -376,13 +376,13 @@ class AutoencoderComponent(Component):
     with tf.name_scope(scope):
       for batch_type in batch_types:
         if batch_type == 'training':
-          self.build_training_summaries(max_outputs)
+          self.build_training_summaries(max_outputs=max_outputs)
         if batch_type == 'encoding':
-          self.build_encoding_summaries(max_outputs)
+          self.build_encoding_summaries(max_outputs=max_outputs)
         if self._hparams.secondary and batch_type == 'secondary_encoding':
           pass
         if self._hparams.secondary and batch_type == 'secondary_decoding':
-          self.build_secondary_decoding_summaries(max_outputs)
+          self.build_secondary_decoding_summaries(max_outputs=max_outputs)
 
   def write_summaries(self, step, writer, batch_type='training'):
     """Write the summaries fetched into _summary_values"""
@@ -525,7 +525,7 @@ class AutoencoderComponent(Component):
       self._summary_encoding_op = tf.summary.merge(summaries)
       return self._summary_encoding_op
 
-  def build_secondary_decoding_summaries(self, scope='secondary_decoding', max_outputs=3, name=None):
+  def build_secondary_decoding_summaries(self, scope='secondary_decoding', name=None, max_outputs=3):
     """Builds secondary decoding summaries."""
     if name:
       scope += 'secondary_decoding_' + name

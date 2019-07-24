@@ -146,7 +146,7 @@ class Workflow:
         train_dataset = train_dataset.filter(lambda x, y: tf_label_filter(x, y, the_classes))
 
       train_dataset = train_dataset.shuffle(buffer_size=10000)
-      train_dataset = train_dataset.apply(tf.contrib.data.batch_and_drop_remainder(self._hparams.batch_size))
+      train_dataset = train_dataset.batch(self._hparams.batch_size, drop_remainder=True)
       train_dataset = train_dataset.prefetch(1)
       train_dataset = train_dataset.repeat()  # repeats indefinitely
 
@@ -158,7 +158,7 @@ class Workflow:
                                    self._opts['superclass'],
                                    self._opts['class_proportion'])
         eval_train_dataset = eval_train_dataset.filter(lambda x, y: tf_label_filter(x, y, the_classes))
-      eval_train_dataset = eval_train_dataset.apply(tf.contrib.data.batch_and_drop_remainder(self._hparams.batch_size))
+      eval_train_dataset = eval_train_dataset.batch(self._hparams.batch_size, drop_remainder=True)
       eval_train_dataset = eval_train_dataset.prefetch(1)
       eval_train_dataset = eval_train_dataset.repeat(1)
 
@@ -170,7 +170,7 @@ class Workflow:
                                    self._opts['class_proportion'])
         eval_test_dataset = eval_test_dataset.filter(lambda x, y: tf_label_filter(x, y, the_classes))
 
-      eval_test_dataset = eval_test_dataset.apply(tf.contrib.data.batch_and_drop_remainder(self._hparams.batch_size))
+      eval_test_dataset = eval_test_dataset.batch(self._hparams.batch_size, drop_remainder=True)
       eval_test_dataset = eval_test_dataset.prefetch(1)
       eval_test_dataset = eval_test_dataset.repeat(1)
 
