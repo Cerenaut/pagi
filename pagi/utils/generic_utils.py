@@ -41,6 +41,7 @@ def get_logging():
   return level
 
 def set_logging(level):
+  logging._warn_preinit_stderr = 0  # pylint: disable=protected-access
   log_level = parse_logging_level(level)
 
   logging.set_verbosity(log_level)
