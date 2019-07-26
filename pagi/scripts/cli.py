@@ -55,6 +55,8 @@ def cli():
               help='Jenkins ONLY - The hyperparameters to override for this run/sweep.')
 @click.option('--workflow_opts_sweep', type=str, default=None,
               help='Jenkins ONLY - The workflow options to override for this run/sweep.')
+@click.option('--experiment_opts_sweep', type=str, default=None,
+              help='Jenkins ONLY - The experiment options to override for this run/sweep.')
 @click.option('--logging', type=click.Choice(['debug', 'info', 'warning', 'error', 'critical']), default='info',
               help='Verbosity level for logging.')
 @click.option('--checkpoint', type=str, default=None,
@@ -81,8 +83,8 @@ def cli():
               help='Debug with tensorboard debugger.')
 # pylint: disable=unused-argument
 def run(dataset, workflow, component, dataset_location, hparams_override, hparams_sweep, workflow_opts_sweep,
-        logging, checkpoint, checkpoint_load_scope, checkpoint_frozen_scope, summary_dir, experiment_def, seed,
-        batches, experiment_id, summarize, track, tb_debug):
+        experiment_opts_sweep, logging, checkpoint, checkpoint_load_scope, checkpoint_frozen_scope, summary_dir,
+        experiment_def, seed, batches, experiment_id, summarize, track, tb_debug):
   """Entrypoint for the CLI tool."""
 
   flags = locals()
@@ -101,6 +103,15 @@ def run(dataset, workflow, component, dataset_location, hparams_override, hparam
       for key, value in exp_config['experiment-options'].items():
         if not key.endswith('_sweep'):  # Don't override sweep parameters
           flags[key] = value
+
+    # Override hparams for this sweep/run
+    if experiment_opts_sweep:
+      # Unstringy the string formatted dict
+      experiment_opts_sweep = ast.literal_eval(experiment_opts_sweep)
+
+      # Selectively override experiment options
+      for key, value in experiment_opts_sweep.items():
+        flags[key] = value
 
   if track:
     with mlflow.start_run(experiment_id=experiment_id):
