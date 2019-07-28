@@ -46,7 +46,7 @@ def tf_normalize_to_k(tensor, k, axis=None):
   assert len(tensor.shape) >= 2, 'Tensor must be at least 2 dimensions'
 
   def abs_sum(tensor, axis=None):
-    abs_values = tf.math.abs(tensor)
+    abs_values = tf.abs(tensor)
     return tf.reduce_sum(abs_values, axis=axis)
 
   # Compute the scaling factor
