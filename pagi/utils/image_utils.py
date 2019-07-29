@@ -286,18 +286,25 @@ def get_image_summary_shape(tensor_shape):
   :param tensor_shape assumes shape [batch, dim1, dim2, dim3].
   :return shape with dimension [batch, dim1, dim2-3, 1]
   """
+
   from copy import deepcopy
   # Rules for image summary: "Tensor must be 4-D with last dim 1, 3, or 4" (so, basically 1 then)
   summary_shape = deepcopy(tensor_shape)
 
-  width = tensor_shape[2]
-  depth = tensor_shape[3]
-  if depth > 1:
-    width = width * depth
-    depth = 1
+  if len(tensor_shape) == 2:
+    summary_shape = make_image_summary_shape_from_2d_shape(summary_shape)
+  elif len(tensor_shape) == 4:
+    width = tensor_shape[2]
+    depth = tensor_shape[3]
+    if depth not in [1, 3, 4]:
+      width = width * depth
+      depth = 1
 
-  summary_shape[2] = width
-  summary_shape[3] = depth
+    summary_shape[2] = width
+    summary_shape[3] = depth
+  else:
+    logging.error('Can\'t reshape tensor shape %s for image summary', str(tensor_shape))
+
   return summary_shape
 
 

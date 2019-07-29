@@ -567,7 +567,7 @@ class AutoencoderComponent(Component):
       input_summary_reshape = tf.reshape(self._input_values, summary_input_shape)
 
       # Show input on it's own
-      input_alone = False
+      input_alone = True
       if input_alone:
         summaries.append(tf.summary.image('input', input_summary_reshape, max_outputs=max_outputs))
 
