@@ -53,16 +53,9 @@ class ConvAutoencoderComponent(AutoencoderComponent):
                                                         hparams.filters_field_width,
                                                         hparams.filters_field_stride, hparams.filters,
                                                         padding='SAME')
+
   def _create_encoding_shape_4d(self, input_shape):
     return ConvAutoencoderComponent.get_encoding_shape_4d(input_shape, self._hparams)
-
-  #
-  # intentionally leaving this in case there is a desire to re-instate non square images for conv
-  #
-  # def _hidden_image_summary_shape(self):
-  #   """image shape of hidden layer for summary."""
-  #   hidden_shape = image_utils.get_image_summary_shape(self._encoding_shape)
-  #   return hidden_shape
 
   @staticmethod
   def get_convolved_shape(input_shape, field_height, field_width, field_stride, filters, padding='SAME'):
@@ -199,7 +192,7 @@ class ConvAutoencoderComponent(AutoencoderComponent):
     weights_reshape = np.reshape(weights_transpose, [filters, field_height, field_width * field_depth])
     logging.debug('Weights re shape: %s', weights_reshape.shape)
 
-    file_name = "filters_" + self._name + ".png"
+    file_name = "filters_" + self.name + ".png"
     if folder is not None and folder != "":
       file_name = folder + '/' + file_name
 

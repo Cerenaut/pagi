@@ -29,7 +29,7 @@ class CompositeComponent(SummaryComponent):
     super().__init__()
 
     self._sub_components = {}  # map {name, component}
-    self._consolidate_graph_view = True
+    self._consolidate_graph_view = False
 
   def _select_batch_type(self, batch_type, name, as_list=False):
     name = self._name + '/' + name
