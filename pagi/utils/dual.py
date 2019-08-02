@@ -192,11 +192,14 @@ class Dual:
     self._values = values.copy()
 
   def set_values_to(self, value):
-    shape = self.get_shape()
-    values = np.zeros(shape)
-    if value != 0.0:
-      values.fill(value)
-    self._values = values
+    if isinstance(value, str):
+      self._values = value
+    else:
+      shape = self.get_shape()
+      values = np.zeros(shape)
+      if value != 0.0:
+        values.fill(value)
+      self._values = values
 
   def set_values_uniform_rand(self, offset=0.0, scale=1.0):
     shape = self.get_shape()
