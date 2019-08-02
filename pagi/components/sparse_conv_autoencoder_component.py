@@ -40,6 +40,7 @@ class SparseConvAutoencoderComponent(ConvAutoencoderComponent):
     hparams = ConvAutoencoderComponent.default_hparams()
     hparams.add_hparam('sparsity', 5)
     hparams.add_hparam('sparsity_output_factor', 1.5)
+    hparams.add_hparam('use_inhibition', False)
     hparams.add_hparam('inhibition_decay', 0.0)
     return hparams
 
@@ -84,10 +85,11 @@ class SparseConvAutoencoderComponent(ConvAutoencoderComponent):
     h = encoding_shape[1]
     w = encoding_shape[2]
 
-    self._dual.add(self.inhibition, shape=encoding_shape, default_value=0.0).add_pl()
+    if self._hparams.use_inhibition:
+      self._dual.add(self.inhibition, shape=encoding_shape, default_value=0.0).add_pl()
 
-    top_k_input = self._apply_inhibition(top_k_input)
-    top_k2_input = self._apply_inhibition(top_k2_input)
+      top_k_input = self._apply_inhibition(top_k_input)
+      top_k2_input = self._apply_inhibition(top_k2_input)
 
     # Find the "winners". The top k elements in each batch sample. this is
     # what top_k does.
@@ -111,27 +113,31 @@ class SparseConvAutoencoderComponent(ConvAutoencoderComponent):
     training_filtered = training_encoding * either_mask # apply mask 3 to output 2
     testing_filtered = testing_encoding * top_k2_mask
 
-    self._update_inhibition(either_mask)
+    if self._hparams.use_inhibition:
+      self._update_inhibition(either_mask)
 
     return training_filtered, testing_filtered
 
   def update_feed_dict(self, feed_dict, batch_type='training'):
     """Update the feed dict."""
-    names = [self.inhibition]
-    self._dual.update_feed_dict(feed_dict, names)
+    if self._hparams.use_inhibition:
+      names = [self.inhibition]
+      self._dual.update_feed_dict(feed_dict, names)
 
     super().update_feed_dict(feed_dict, batch_type)
 
   def add_fetches(self, fetches, batch_type='training'):
     """Adds ops that will get evaluated."""
-    names = [self.inhibition]
-    self._dual.add_fetches(fetches, names)
+    if self._hparams.use_inhibition:
+      names = [self.inhibition]
+      self._dual.add_fetches(fetches, names)
 
     super().add_fetches(fetches, batch_type)
 
   def set_fetches(self, fetched, batch_type='training'):
     """Store updated tensors"""
-    names = [self.inhibition]
-    self._dual.set_fetches(fetched, names)
+    if self._hparams.use_inhibition:
+      names = [self.inhibition]
+      self._dual.set_fetches(fetched, names)
 
     super().set_fetches(fetched, batch_type)
