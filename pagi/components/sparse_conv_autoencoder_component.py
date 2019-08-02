@@ -19,6 +19,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import logging
 import tensorflow as tf
 
 from pagi.components.conv_autoencoder_component import ConvAutoencoderComponent
@@ -40,6 +41,7 @@ class SparseConvAutoencoderComponent(ConvAutoencoderComponent):
     hparams = ConvAutoencoderComponent.default_hparams()
     hparams.add_hparam('sparsity', 5)
     hparams.add_hparam('sparsity_output_factor', 1.5)
+    hparams.add_hparam('use_lifetime_sparsity', True)
     hparams.add_hparam('use_inhibition', False)
     hparams.add_hparam('inhibition_decay', 0.0)
     return hparams
@@ -86,6 +88,7 @@ class SparseConvAutoencoderComponent(ConvAutoencoderComponent):
     w = encoding_shape[2]
 
     if self._hparams.use_inhibition:
+      logging.info('Using inhibition in layer = %s', self.name)
       self._dual.add(self.inhibition, shape=encoding_shape, default_value=0.0).add_pl()
 
       top_k_input = self._apply_inhibition(top_k_input)
@@ -109,7 +112,12 @@ class SparseConvAutoencoderComponent(ConvAutoencoderComponent):
 
     # Apply the 3 masks
     # ---------------------------------------------------------------------
-    either_mask = tf.maximum(top_k_mask, batch_mask) # logical OR, i.e. top-k or top-1 per cell in batch
+    if self._hparams.use_lifetime_sparsity:
+      logging.info('Using lifetime sparsity in layer = %s', self.name)
+      either_mask = tf.maximum(top_k_mask, batch_mask) # logical OR, i.e. top-k or top-1 per cell in batch
+    else:
+      either_mask = top_k_mask
+
     training_filtered = training_encoding * either_mask # apply mask 3 to output 2
     testing_filtered = testing_encoding * top_k2_mask
 
