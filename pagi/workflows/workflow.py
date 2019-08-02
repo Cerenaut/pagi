@@ -201,7 +201,7 @@ class Workflow:
     # Create the encoder component
     # -------------------------------------------------------------------------
     self._component = self._component_type()
-    self._component.build(self._inputs, self._dataset.shape, self._hparams, 'component')
+    self._component.build(self._inputs, self._dataset.shape, self._hparams)
 
     if self._summarize:
       batch_types = ['training', 'encoding']
@@ -455,8 +455,9 @@ class Workflow:
     # Export all filters to disk
     try:
       self._component.write_filters(session, self._summary_dir)
-    except AttributeError:
+    except AttributeError as e:
       logging.warning('Failed to export filters.')
+      logging.debug(e)
 
   def step_graph(self, component, feed_dict, batch_type, fetches=None, is_update_feed_dict=True):
     """Encapsulate the stuff you need to do before and after a graph step: feed dict and fetches"""
