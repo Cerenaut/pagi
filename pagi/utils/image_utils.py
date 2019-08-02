@@ -327,8 +327,10 @@ def array_to_image_string(image_array):
   cmap = None
   if image_array.shape[2] == 1:
     cmap = 'gray'
+    image_array = np.squeeze(image_array, axis=2)
 
-  image_array = np.squeeze(image_array, axis=2)
+  # Normalize to 0..1 range required by matplotlib
+  image_array = (image_array - np.min(image_array)) / (np.max(image_array) - np.min(image_array))
 
   output = io.BytesIO()
   plt.imsave(output, image_array, format='PNG', cmap=cmap)
