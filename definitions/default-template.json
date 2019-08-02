@@ -1,35 +1,32 @@
 {
   "experiment-options": {
-    "workflow": "workflows.workflow",
-    "dataset": "datasets.mnist_dataset",
-    "component": "components.sparse_conv_autoencoder_component",
-    
+    "workflow": "pagi.workflows.workflow",
+    "dataset": "pagi.datasets.mnist_dataset",
+    "component": "pagi.components.sparse_conv_autoencoder_component",
     "dataset_location": "data",
-    "hparams_override": null,
-    
     "logging": "info",
-    "checkpoint": null,
-    "checkpoint_load_scope": null,
-    "checkpoint_frozen_scope": null,
-    "summary_dir": null,
 
     "seed": 42,
-    "batches": 10,
-    "experiment_id": null,
-
-    "evaluate": true,
+    "batches": 1000,
     "summarize": true,
-    "track": false
+
+    "hparams_override": {
+      "summarize_encoding": false,
+      "summarize_decoding": true,
+      "summarize_input": false,
+      "summarize_weights": false
+    }
   },
   "export-options": {
-    "export_filters": true,
-    "export_checkpoint": true,
+    "export_filters": false,
+    "export_checkpoint": false,
     "interval_batches": 10
   },
   "workflow-options": {
     "superclass": false,
     "train_classes": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
-    "test_classes": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+    "test_classes": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+    "evaluate": false
   },
   "classifier-options": {
     "model": "logistic",
