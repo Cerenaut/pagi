@@ -41,7 +41,7 @@ def tf_random_mask(p0, shape):
   return random_mask
 
 
-def tf_normalize_to_k(tensor, k, axis=None):
+def tf_normalize_to_k(tensor, k, axis=None, eps=1e-08):
   """Normalize the tensor (B, ...) such that each sample in the batch sums to K."""
   assert len(tensor.shape) >= 2, 'Tensor must be at least 2 dimensions'
 
@@ -50,7 +50,7 @@ def tf_normalize_to_k(tensor, k, axis=None):
     return tf.reduce_sum(abs_values, axis=axis)
 
   # Compute the scaling factor
-  scaling_factor = k / abs_sum(tensor, axis=axis)
+  scaling_factor = k / (abs_sum(tensor, axis=axis) + eps)
 
   # Compute the number of dimensions, excluding the batch dimension
   ndims = len(tensor.shape[1:])
