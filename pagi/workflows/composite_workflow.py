@@ -94,6 +94,14 @@ class CompositeWorkflow(Workflow):
       1. A is first decoded at B
       2. B is then decoded at C_1
       3. C_1 is finally decoded at C_0
+
+    Args:
+      batch: The number of the current batch/step
+      decoding_name: The name of the component to decode
+      component_name: The name of the component to decode with
+      encoding: The encoding of the component to decode
+      feed_dict: The constructed feed_dict (containing dataset handle, etc.)
+      summarise: Creates decoding image summaries for TensorBoard
     """
     batch_type = 'secondary_decoding'
     has_sub_components = False
@@ -120,8 +128,16 @@ class CompositeWorkflow(Workflow):
     decoders = list(sub_components.keys())
     decoders.reverse()
 
+    # If A is a composite component with 3 layers, then 'decoders' (after reversing)
+    # would be = [a/layer-3, a/layer-2, a/layer-1]
+    # If the 'decoding_name' is in the decoder stack, e.g. if we try to decode layer-2 specifically
+    # then remove the layers above (e.g. layer-3)
+    if decoding_name in decoders:
+      idx = decoders.index(decoding_name)
+      decoders = decoders[idx:]
+
     decodings = []
-    if decoding_name != component_name:
+    if decoding_name != component_name and decoding_name not in decoders:
       decodings.append(decoding_name)
     decodings += decoders
 
