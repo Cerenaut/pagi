@@ -94,7 +94,7 @@ class SparseConvAutoencoderComponent(ConvAutoencoderComponent):
       self._dual.add(self.inhibition, shape=encoding_shape, default_value=0.0).add_pl()
 
       top_k_input = self._apply_inhibition(top_k_input)
-      top_k2_input = self._apply_inhibition(top_k2_input)
+      # top_k2_input = self._apply_inhibition(top_k2_input)
 
     # Find the "winners". The top k elements in each batch sample. this is
     # what top_k does.
