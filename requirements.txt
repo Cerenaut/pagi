@@ -1,9 +1,0 @@
-scipy
-matplotlib
-six
-numpy
-mlflow
-h5py
-sklearn
-scikit-image
-scikit_learn
