@@ -151,7 +151,7 @@ class SparseConvAutoencoderMaxPoolComponent(SparseConvAutoencoderComponent):
       names = ['encoding_pooled', 'encoding_unpooled']
     self._dual.set_fetches(fetched, names)
 
-  def _build_summaries(self, max_outputs=3):
+  def _build_summaries(self, batch_type=None, max_outputs=3):
 
     summaries = []
     if self._hparams.summarize_level == SummarizeLevels.OFF.value:
