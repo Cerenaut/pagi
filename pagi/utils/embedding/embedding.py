@@ -15,6 +15,7 @@
 
 """Embedding class."""
 
+import sys
 import logging
 
 import numpy as np
@@ -22,19 +23,26 @@ import numpy as np
 
 class Embedding:
   """
-  Embedding transforms a large number of disjoint classes (e.g. words) into a dense or sparse combination
-  of fewer dimensions. Good embeddings have other features represented in the relationships between classes.
+  A numerical representation of a set of tokens as an n-d array.
+  In practice we assume the token values are a 2-d matrix per token.
 
-  self._matrix = np.zeros([num_rows, num_cols]) The embedding
-  self._key_index = {} given key, what's the index (reverse lookup)
-  self._index_key = [] array where index has relevant key
+  self._token_values = [token, values_h, values_w] The embedding.
+  self._token_index = {} given token, what's the index (reverse lookup)
+  self._index_token = [] array where index has relevant token
   """
 
   def __init__(self):
+    """Noarg constructor and deferred setup()"""
     self.clear()
 
+  def clear(self):
+    self._delimiter = ' '
+    self._token_values = None
+    self._token_index = None # key: word, value: index
+    self._index_token = None # key: index, value: word
+
   @staticmethod
-  def tokenize_sentence(sentence, delimiter=' '):
+  def tokenize_line(sentence, delimiter=' '):
     words = sentence.strip().split(delimiter)
     clean_words = []
     for word in words:
@@ -43,210 +51,134 @@ class Embedding:
         clean_words.append(clean_word)
     return clean_words
 
-  def read_corpus_files(self, corpus_files, eos='<end>'):
-    """Read corpus data from disk."""
-    # print("files: ", corpus_files)
-    # import nltk.data
-
+  @staticmethod
+  def tokenize_files(corpus_files, delimiter=' ', eos='<end>'):
+    """Read the text files of a corpus into an array of tokens."""
     text = ''
     for file in corpus_files:
-      print("reading file", file)
       corpus = open(file).read()
-      # print( "corp ", corpus)
-      text = text + corpus + '\n'
+      text = text + corpus + '\n'  # Add a trailing newline to concat files
 
-    # sent_tokenize_list = nltk.sent_tokenize(all_text)
     sentences = text.splitlines()
-    # tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
-    # sentences = tokenizer.tokenize(all_text)
-    # print( "Here3 sentences", sentences)
-    # sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
-    # sentenized = doc_set.body.apply(sent_detector.tokenize)
-    # sentences = itertools.chain.from_iterable(sentenized.tolist()) # just to flatten
 
     data = []
     for sentence in sentences:
-      # result += [nltk.word_tokenize(sent)]
-      # words = sentence.strip().split(' ')
-      # clean_words = []
-      # for word in words:
-      #   clean_word = word.strip()
-      #   if len(clean_word) > 0:
-      #     clean_words.append(clean_word)
-      clean_words = Embedding.tokenize_sentence(sentence)
-      if clean_words:
-        clean_words.append(eos) # add EOS marker, which is needed to embed this token
-        data.append(clean_words)
+      tokens = Embedding.tokenize_line(sentence, delimiter)
+      if tokens:
+        if eos is not None:
+          tokens.append(eos) # add EOS marker, which is needed to embed this token
+        data.extend(tokens)
     # print("result: ", data)
     return data
 
-  def create(self, corpus_files, model_file, size=100, eos='<end>'):
-    pass
-
-    # self.clear()
-
-    # data = self.read_corpus_files(corpus_files, eos)
-
-    # # https://machinelearningmastery.com/develop-word-embeddings-python-gensim/
-    # model = gensim.models.Word2Vec(data, size=size, min_count=1)
-    # words = list(model.wv.vocab)
-    # #print(" WORDS len: ", len(words))
-    # model.wv.save_word2vec_format(model_file, binary=False)
-    # logging.info('Wrote model to file: ' + model_file)
-
-    # # from sklearn.decomposition import PCA
-    # # from matplotlib import pyplot
-    # # X = model[model.wv.vocab]
-    # # pca = PCA(n_components=2)
-    # # result = pca.fit_transform(X)
-    # # # create a scatter plot of the projection
-    # # pyplot.scatter(result[:, 0], result[:, 1])
-    # # words = list(model.wv.vocab)
-    # # for i, word in enumerate(words):
-    # #   pyplot.annotate(word, xy=(result[i, 0], result[i, 1]))
-    # # pyplot.show()
-
-  def set_op(self, name, op, shape=None, default_value=None):
-    if name in self._duals.keys():
-      dual = self._duals[name]
-    else:
-      dual = self.add(name, shape, default_value)
-    dual.set_op(op)
-
-  def check(self):
-    """Checks overlap."""
-    num_keys = len(self._index_key)
-    num_cols = len(self._matrix[0])
-
-    min_overlap = num_cols * num_cols
-    max_overlap = 0
-    # sum_overlap = 0
-    # max_bits = 0
-
-    for i in range(num_keys):
-      print('i=', i, 'max overlap ', max_overlap)
-      for j in range(num_keys):
-        if i == j:
-          continue
-
-        if i > j:
-          continue
-
-        overlap = 0
-        bits = 0
-
-        for k in range(num_cols):
-          x_i = self._matrix[i][k]
-          x_j = self._matrix[j][k]
-          if x_i > 0.0:
-            if x_j > 0.0:
-              overlap = overlap +1
-            bits = bits +1
-
-        # print('i=',i,' j=',j, 'max overlap ', max_overlap, 'overlap ', overlap, ' max bits: ', max_bits)
-
-        # sum_overlap += overlap
-        min_overlap = min(min_overlap, overlap)
-        max_overlap = max(max_overlap, overlap)
-        # max_bits = max(max_bits, bits)
-
-    # mean_overlap = float(sum_overlap) / float(max_bits)
-
-    print('Overlap min: ', min_overlap, ' of ', max_bits)
-    print('Overlap max: ', max_overlap, ' of ', max_bits)
-    # print('Overlap avg: ', mean_overlap, ' of ', max_bits)
-
-  def clear(self):
-    self._matrix = None
-    self._key_index = None # key: word, value: index
-    self._index_key = None # key: index, value: word
-
-  def has_keys(self, keys):
-    num_keys = len(keys)
-    for i in range(num_keys):
-      key = keys[i]
-      has_key = self.has_key(key)
-      if not has_key:
+  def has_tokens(self, tokens):
+    num_tokens = len(tokens)
+    for i in range(num_tokens):
+      token = tokens[i]
+      has_token = self.has_token(token)
+      if not has_token:
         return False
     return True
 
-  def has_key(self, key):
-    if key not in self._key_index:
-      logging.debug('Key "%s" not found.', key)
+  def has_token(self, token):
+    if token not in self._token_index.keys():
+      logging.debug('Token "%s" not found.', token)
       return False
     return True
 
-  def get_keys(self):
-    # keys = []
-    # num_keys = len(self._index_key)
-    # for i in range(num_keys):
-    #   keys.append(self._index_key[i])
-    return self._index_key
+  def get_tokens(self):
+    """Returns an array of tokens"""
+    return self._index_token
 
-  def get_num_keys(self):
-    return len(self._index_key)
+  def get_num_tokens(self):
+    """Returns number of unique tokens"""
+    return len(self._index_token)
 
-  def get_num_values(self):
-    return self._matrix.shape[1]
+  def get_token_value_area(self):
+    value_shape = self.get_token_value_shape()
+    area = np.prod(value_shape)
+    return area
 
-  def get_matrix(self):
-    return self._matrix
+  def get_token_value_shape(self):
+    """Returns the shape of a single token's values"""
+    return self._token_values.shape[1:]
 
-  def get_index(self, key):
-    index = self._key_index[key]
+  def get_index(self, token):
+    index = self._token_index[token]
     return index
 
-  def get_key(self, index):
-    key = self._index_key[index]
-    return key
+  def get_token(self, index):
+    token = self._index_token[index]
+    return token
 
-  def get_value(self, key, index):
-    row = self.get_index(key)
-    value = self._matrix[row][index]
+  def get_tokens_values(self):
+    return self._token_values
+
+  def get_token_value(self, token, y, x):
+    index = self.get_index(token)
+    value = self._token_values[index][y][x]
     return value
 
-  def get_values(self, key):
-    row = self.get_index(key)
-    values = self._matrix[row]
+  def get_token_values(self, token):
+    index = self.get_index(token)
+    values = self._token_values[index]
     return values
 
-  def read(self, file_path):
-    """Read data from file."""
-    self.clear()
+  def check(self):
+    """Check that the shapes match and tokens have unique vectors."""
+    token_values_shape = self.get_token_value_shape()
+    num_trees = token_values_shape[0]
+    num_values = token_values_shape[1]
+    num_tokens = len(self._index_token)
 
-    with open(file_path, 'rt') as file:
+    min_sum_sq_diff = sys.float_info.max
 
-      rows = file.readlines()
-      # num_file_rows = len(rows)
-      # print("found", num_file_rows, "rows")
+    for index1 in range(num_tokens):
+      token1 = self._index_token[index1]
+      print('check token:', index1, 'which is', token1)      
+      #min_sum_sq_diff = sys.float_info.max  # reset 
 
-      row = rows[0]
-      cols = row.split(' ')
+      for index2 in range(num_tokens):
 
-      num_rows = int(cols[0])
-      num_cols = int(cols[1])
+        if index2 == index1:
+          continue
 
-      # print("embedding has", num_rows , "x", num_cols)
+        token2 = self._index_token[index2]
+        print('compare token:', index2, 'which is', token2)
 
-      self._matrix = np.zeros([num_rows, num_cols])
-      self._key_index = {}
-      self._index_key = []#np.zeros(num_rows)
+        for t in range(num_trees):
+          sum_sq_diff = 0.0
+          for v in range(num_values):
+            x1 = self._token_values[index1][t][v]
+            x2 = self._token_values[index2][t][v]
+            sum_sq_diff = sum_sq_diff + ((x1-x2) * (x1-x2))
+          #print('tree diff = ', sum_sq_diff)      
+          min_sum_sq_diff = min(min_sum_sq_diff, sum_sq_diff)
 
-      for r in range(num_rows):
-        row = rows[r+1]
-        #print("row: ", row)
-        values = row.split(' ')
-        key = values[0].strip()
+      print('check token:', index1, 'which is', token1, ' min diff = ', min_sum_sq_diff)      
+    print('All tokens min diff = ', min_sum_sq_diff)      
+    threshold = 1.0
+    if min_sum_sq_diff >= threshold:
+      return True
+    return False
 
-        for c in range(num_cols):
-          str_val = values[c + 1]
-          # print('row:', row_index, "key:", key, "val:", str_val, 'c', c)
-          value = float(str_val)
-          self._matrix[r][c] = value
+  def write_tokens_values(self, file_path):
+    np.save(file_path, self._token_values)
 
-        self._key_index.update({key: r})
-        self._index_key.append(key)#[row_index] = key
+  def read_tokens_values(self, file_path):
+    self._token_values = np.load(file_path)
 
-        # logging.info('Key: ' + str(key) + ' index: ' + str(row_index))
+  def write_tokens(self, file_path, delimiter=' '):
+    np.savetxt(file_path, self._index_token, delimiter=delimiter, fmt='%s')
 
-    return True
+  def read_tokens(self, file_path, delimiter=' '):
+    """Read token excluding embeddings."""
+    #self._index_token = np.genfromtxt(file_path, dtype='str')
+    self._index_token = Embedding.tokenize_files([file_path], delimiter, eos=None)
+    #print('index token: ', self._index_token)
+
+    self._token_index = {}
+    num_tokens = len(self._index_token)
+    for index in range(num_tokens):
+      token = self._index_token[index]
+      self._token_index.update({token: index})

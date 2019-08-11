@@ -48,6 +48,7 @@ class Workflow:
         evaluate=False,
         train=True,
         training_progress_interval=0,
+        testing_progress_interval=0,
         profile_file=None
     )
 
