@@ -30,6 +30,8 @@ def type_activation_fn(fn_type):
     fn = tf.tanh
   elif fn_type == 'sigmoid':
     fn = tf.sigmoid
+  elif fn_type == 'softmax':
+    fn = tf.nn.softmax
   elif fn_type == 'logistic':
     fn = tf.logistic
   elif fn_type == 'leaky_relu':

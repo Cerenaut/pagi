@@ -382,7 +382,7 @@ class Workflow:
 
       self._run_profiler()
 
-    elif evaluate:  # train is False
+    if evaluate:  # train is False
       self.helper_evaluate(0)
     else:
       logging.warning("Both 'train' and 'evaluate' flag are False, so nothing to run.")
