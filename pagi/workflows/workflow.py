@@ -359,7 +359,7 @@ class Workflow:
         training_epoch = self._dataset.get_training_epoch(self._hparams.batch_size, training_step)
 
         # Perform the training, and retrieve feed_dict for evaluation phase
-        feed_dict = self.training(training_handle, batch)
+        self.training(training_handle, batch)
 
         self._on_after_training_batch(batch, training_step, training_epoch)
 
@@ -367,7 +367,7 @@ class Workflow:
         # -------------------------------------------------------------------------
         if self._export_opts['export_filters']:
           if batch == (num_batches - 1) or (batch + 1) % self._export_opts['interval_batches'] == 0:
-            self.export(self._session, feed_dict)
+            self.export(self._session)
 
         if self._export_opts['export_checkpoint']:
           if batch == (num_batches - 1) or (batch + 1) % self._export_opts['interval_batches'] == 0:
@@ -382,10 +382,8 @@ class Workflow:
 
       self._run_profiler()
 
-    if evaluate:  # train is False
+    if evaluate:
       self.helper_evaluate(0)
-    else:
-      logging.warning("Both 'train' and 'evaluate' flag are False, so nothing to run.")
 
   def session_run(self, fetches, feed_dict):
     if self.do_profile():
@@ -450,7 +448,7 @@ class Workflow:
 
     harness.write_component_evaluation_summaries(self._component, batch, self._writer)
 
-  def export(self, session, feed_dict):
+  def export(self, session, feed_dict=None):
     del feed_dict
 
     # Export all filters to disk
