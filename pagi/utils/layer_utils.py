@@ -24,7 +24,7 @@ def type_activation_fn(fn_type):
     fn = None
   elif fn_type == 'relu':
     fn = tf.nn.relu
-  elif fn_type == 'leaky-relu':
+  elif fn_type in ['leaky-relu', 'leaky_relu']:
     fn = tf.nn.leaky_relu
   elif fn_type == 'tanh':
     fn = tf.tanh
@@ -34,8 +34,6 @@ def type_activation_fn(fn_type):
     fn = tf.nn.softmax
   elif fn_type == 'logistic':
     fn = tf.logistic
-  elif fn_type == 'leaky_relu':
-    fn = tf.nn.leaky_relu
   else:
     raise NotImplementedError(
         'Activation function implemented: ' + str(fn_type))
