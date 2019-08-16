@@ -213,6 +213,8 @@ class Workflow:
   def _setup_checkpoint_saver(self):
     """Handles the saving and restoration of graph state and variables."""
 
+    max_to_keep = self._export_opts['max_to_keep']
+
     # Loads a subset of the checkpoint, specified by variable scopes
     if self._checkpoint_opts['checkpoint_load_scope']:
       load_scope = []
@@ -245,13 +247,12 @@ class Workflow:
         self._freeze_training = True
 
       # Create new tf.Saver to save new checkpoints
-      max_to_keep = self._export_opts['max_to_keep']
       self._saver = tf.train.Saver(max_to_keep=max_to_keep)
       self._last_step = 0
 
     # Otherwise, attempt to load the entire checkpoint
     else:
-      self._saver = tf.train.Saver()
+      self._saver = tf.train.Saver(max_to_keep=max_to_keep)
       self._last_step = self._restore_checkpoint(self._saver, self._checkpoint_opts['checkpoint_path'])
 
   def _extract_checkpoint_step(self, path):
