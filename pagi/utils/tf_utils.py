@@ -67,7 +67,7 @@ def tf_normalize_to_k(tensor, k, axis=None, eps=1e-08):
 
 def tf_do_training(batch_type, training_interval, training_batch_count, name='Component'):
   """Logic for deciding whether to train on a given batch, considering batch type and training batch interval"""
-  fetch_training_op = True
+  fetch_training_op = False
 
   if batch_type == 'training':
     t1 = int(training_interval[0])  # default: 0 (at start)
