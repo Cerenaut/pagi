@@ -245,7 +245,8 @@ class Workflow:
         self._freeze_training = True
 
       # Create new tf.Saver to save new checkpoints
-      self._saver = tf.train.Saver()
+      max_to_keep = self._export_opts['max_to_keep']
+      self._saver = tf.train.Saver(max_to_keep=max_to_keep)
       self._last_step = 0
 
     # Otherwise, attempt to load the entire checkpoint

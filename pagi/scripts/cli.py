@@ -155,6 +155,7 @@ def _run_experiment(flags, exp_config):
   export_opts = {
       'export_filters': True,
       'export_checkpoint': True,
+      'max_to_keep': 5,
       'interval_batches': flags['batches']
   }
 
