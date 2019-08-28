@@ -46,6 +46,7 @@ class Workflow:
         train_classes=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
         test_classes=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
         evaluate=False,
+        validate=False,
         train=True,
         training_progress_interval=0,
         testing_progress_interval=0,
@@ -344,12 +345,21 @@ class Workflow:
     self.evaluate(self._placeholders['dataset_handle'], self._dataset_iterators['eval_train'],
                   self._dataset_iterators['eval_test'], batch=batch)
 
+  def helper_validate(self, batch):
+    # Prepare inputs and run one batch
+    return
+
   def run(self, num_batches, evaluate, train=True):
     """Run Experiment"""
+    validate = True  # This needs to be sorted somehow - where does this get called from?
 
     self._setup_profiler()
 
+    global_step = 0
+    phase_change = True
+
     if train:
+      # TODO: The training handle needs to move into the training() method
       training_handle = self._session.run(self._dataset_iterators['training'].string_handle())
       self._session.run(self._dataset_iterators['training'].initializer)
 
@@ -358,9 +368,11 @@ class Workflow:
       for batch in range(self._last_step, num_batches):
         training_step = self._session.run(tf.train.get_global_step(self._session.graph))
         training_epoch = self._dataset.get_training_epoch(self._hparams.batch_size, training_step)
+        global_step = batch
 
         # Perform the training, and retrieve feed_dict for evaluation phase
-        self.training(training_handle, batch)
+        self.training_step(training_handle, batch, phase_change)
+        phase_change = False  # Ordinarily, don't reset
 
         self._on_after_training_batch(batch, training_step, training_epoch)
 
@@ -375,16 +387,17 @@ class Workflow:
             self._saver.save(self._session, os.path.join(self._summary_dir, 'model.ckpt'), global_step=batch + 1)
 
         # evaluation: every N steps, test the encoding model
-        if evaluate:
+        if validate:
           if (batch + 1) % self._eval_opts['interval_batches'] == 0:  # defaults to once per batches
-            self.helper_evaluate(batch)
+            self.helper_validate(global_step)
+            phase_change = True
 
       logging.info('Training & optional evaluation complete.')
 
       self._run_profiler()
 
     if evaluate:
-      self.helper_evaluate(0)
+      self.helper_evaluate(global_step)
 
   def session_run(self, fetches, feed_dict):
     if self.do_profile():
