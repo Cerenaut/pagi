@@ -30,45 +30,6 @@ from pagi.workflows.workflow import Workflow
 class CompositeWorkflow(Workflow):
   """The base workflow for working with composite components."""
 
-  # TEST_DECODES = []
-
-  # def _init_test_decodes(self):
-  #   sub_component_keys = list(self._component.get_sub_components().keys())
-
-  #   for i in range(len(sub_component_keys) - 1, 0, -1):
-  #     self.TEST_DECODES.append((sub_component_keys[i], sub_component_keys[i-1])) # (name, decoder)
-
-  #   self._num_repeats = len(self.TEST_DECODES) + 1
-
-  #   return self.TEST_DECODES
-
-  # def _setup_component(self):
-  #   """Setup the component"""
-  #   super()._setup_component()
-
-  #   self._init_test_decodes()
-
-  #   self._build_test_decodes_summaries()
-
-  # def _add_composite_decodes(self, name, composite_decoder):
-  #   """Calculate the number of decoders required. This takes into account any nested components."""
-  #   num_decoders = 1
-
-  #   try:
-  #     num_sub_components = len(self._component.get_sub_component(composite_decoder).get_sub_components())
-
-  #     if num_sub_components > 1:
-  #       num_decoders = num_sub_components
-  #   except AttributeError:
-  #     pass
-
-  #   for _ in range(num_decoders):
-  #     self.TEST_DECODES.append((name, composite_decoder))
-
-  # def _build_test_decodes_summaries(self):
-  #   for _, (name, decoder) in enumerate(self.TEST_DECODES):
-  #     self._component.build_secondary_decoding_summaries(name, decoder)
-
   def _setup_train_batch_types(self):
     sub_components = self._component.get_sub_components()
 
