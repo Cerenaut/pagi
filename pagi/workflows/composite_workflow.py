@@ -19,12 +19,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import math
 import logging
 
 import numpy as np
 import tensorflow as tf
 
-from pagi.utils import image_utils
+from pagi.utils import image_utils, layer_utils
 from pagi.workflows.workflow import Workflow
 
 class CompositeWorkflow(Workflow):
@@ -119,6 +120,20 @@ class CompositeWorkflow(Workflow):
       # Get placeholders
       secondary_decoding_input_pl = dual.get('secondary_decoding_input').get_pl()
       batch_type_pl = dual.get('batch_type').get_pl()
+
+      expected_shape = secondary_decoding_input_pl.get_shape().as_list()
+      encoding_shape = list(encoding.shape)
+
+      # Unpool the encoding to facilitate the decoding process
+      if expected_shape != encoding_shape:
+        pool_size = math.ceil(expected_shape[1] / encoding_shape[1])
+
+        if pool_size > 1:
+          unpool_op = layer_utils.unpool(encoding, pool_size, pool_size, pre_pooled_shape=expected_shape)
+          encoding = self._session.run(unpool_op)
+          encoding_shape = list(encoding.shape)
+
+        assert expected_shape == encoding_shape
 
       secondary_decoding_feed_dict = feed_dict.copy()
       secondary_decoding_feed_dict.update({

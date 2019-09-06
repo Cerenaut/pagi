@@ -31,8 +31,11 @@ class CompositeComponent(SummaryComponent):
     self._sub_components = {}  # map {name, component}
     self._consolidate_graph_view = False
 
+  def _build_summaries(self, batch_type, max_outputs=3):
+    pass
+
   def _select_batch_type(self, batch_type, name, as_list=False):
-    name = self._name + '/' + name
+    name = self.name + '/' + name
     if isinstance(batch_type, dict):
       if name in batch_type:
         batch_type = batch_type[name]
@@ -52,6 +55,46 @@ class CompositeComponent(SummaryComponent):
     if name in self._sub_components:
       return self._sub_components[name]
     return None
+
+  def get_dual(self, name=None):  # pylint: disable=arguments-differ
+    if name is None:
+      return self._dual
+    return self.get_sub_component(name).get_dual()
+
+  def get_layer_name(self, layer_idx):
+    return self.name + '/layer-' + str(layer_idx + 1)
+
+  def get_layer_hparams(self, layer_idx, layer_hparams):
+    """Parse list-based combined HParams to a separate layer-based HParams."""
+    global_hparams_dict = self._hparams.values()
+
+    for key, _ in layer_hparams.values().items():
+      if key in global_hparams_dict.keys():
+        hparam_value = global_hparams_dict[key]
+        if isinstance(global_hparams_dict[key], list):
+          try:
+            hparam_value = global_hparams_dict[key][layer_idx]
+          except IndexError:
+            hparam_value = global_hparams_dict[key][0]
+
+        layer_hparams.set_hparam(key, hparam_value)
+
+    return layer_hparams
+
+  def get_batch_type(self, name=None):
+    """
+    Return dic of batch types for each component (key is component)
+    If component does not have a persistent batch type, then don't include in dictionary,
+    assumption is that in that case, it doesn't have any effect.
+    """
+    if name is None:
+      batch_types = []
+      for c in self._sub_components:
+        if hasattr(self._sub_components[c], 'get_batch_type'):
+          batch_types.append(self._sub_components[c].get_batch_type())
+      return max(set(batch_types), key=batch_types.count)
+
+    return self._sub_components[name].get_batch_type()
 
   def update_feed_dict(self, feed_dict, batch_type='training'):
     for name, comp in self._sub_components.items():
@@ -74,7 +117,7 @@ class CompositeComponent(SummaryComponent):
     for name, comp in components.items():
       scope = name + '-summaries'   # this is best for visualising images in summaries
       if self._consolidate_graph_view:
-        scope = self._name + '/' + name + '/summaries/'
+        scope = self.name + '/' + name + '/summaries/'
 
       batch_type = self._select_batch_type(batch_types, name, as_list=True)
 
@@ -84,5 +127,13 @@ class CompositeComponent(SummaryComponent):
     for name, comp in self._sub_components.items():
       comp.write_summaries(step, writer, self._select_batch_type(batch_type, name))
 
-  def _build_summaries(self, batch_type, max_outputs=3):
-    pass
+  def write_filters(self, session, folder):
+    with tf.variable_scope(self.name, reuse=tf.AUTO_REUSE):
+      for _, comp in self._sub_components.items():
+        if hasattr(comp, 'write_filters'):
+          comp.write_filters(session, folder)
+
+  def reset(self):
+    """Reset the trained/learned variables and all other state of the component to a new random state."""
+    for c in self._sub_components.values():
+      c.reset()
