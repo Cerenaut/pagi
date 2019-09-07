@@ -170,23 +170,24 @@ class SparseConvAutoencoderMaxPoolComponent(SparseConvAutoencoderComponent):
     max_outputs = self._hparams.max_outputs
     summaries = super()._build_summaries(batch_type, max_outputs)
 
-    if self.get_encoding_pooled_op() is not None:
-      encoding_pooled = self.get_encoding_pooled_op()
-      encoding_pooled_shape = encoding_pooled.get_shape().as_list()
-      encoding_pooled_volume = np.prod(encoding_pooled_shape[1:])
-      encoding_pooled_square_image_shape, _ = image_utils.square_image_shape_from_1d(encoding_pooled_volume)
+    if self._hparams.summarize_encoding:
+      if self.get_encoding_pooled_op() is not None:
+        encoding_pooled = self.get_encoding_pooled_op()
+        encoding_pooled_shape = encoding_pooled.get_shape().as_list()
+        encoding_pooled_volume = np.prod(encoding_pooled_shape[1:])
+        encoding_pooled_square_image_shape, _ = image_utils.square_image_shape_from_1d(encoding_pooled_volume)
 
-      encoding_pooled_reshaped = tf.reshape(encoding_pooled, encoding_pooled_square_image_shape)
-      summaries.append(tf.summary.image('encoding_pooled', encoding_pooled_reshaped, max_outputs=max_outputs))
+        encoding_pooled_reshaped = tf.reshape(encoding_pooled, encoding_pooled_square_image_shape)
+        summaries.append(tf.summary.image('encoding_pooled', encoding_pooled_reshaped, max_outputs=max_outputs))
 
-    if self.get_encoding_unpooled_op() is not None:
-      encoding_unpooled = self.get_encoding_unpooled_op()
-      encoding_unpooled_shape = encoding_unpooled.get_shape().as_list()
-      encoding_unpooled_volume = np.prod(encoding_unpooled_shape[1:])
-      encoding_unpooled_square_image_shape, _ = image_utils.square_image_shape_from_1d(encoding_unpooled_volume)
+      if self.get_encoding_unpooled_op() is not None:
+        encoding_unpooled = self.get_encoding_unpooled_op()
+        encoding_unpooled_shape = encoding_unpooled.get_shape().as_list()
+        encoding_unpooled_volume = np.prod(encoding_unpooled_shape[1:])
+        encoding_unpooled_square_image_shape, _ = image_utils.square_image_shape_from_1d(encoding_unpooled_volume)
 
-      encoding_unpooled_reshaped = tf.reshape(encoding_unpooled, encoding_unpooled_square_image_shape)
-      summaries.append(tf.summary.image('encoding_unpooled', encoding_unpooled_reshaped, max_outputs=max_outputs))
+        encoding_unpooled_reshaped = tf.reshape(encoding_unpooled, encoding_unpooled_square_image_shape)
+        summaries.append(tf.summary.image('encoding_unpooled', encoding_unpooled_reshaped, max_outputs=max_outputs))
 
     return summaries
 
