@@ -171,10 +171,10 @@ class Embedding:
   def write_tokens(self, file_path, delimiter=' '):
     np.savetxt(file_path, self._index_token, delimiter=delimiter, fmt='%s')
 
-  def read_tokens(self, file_path, delimiter=' '):
+  def read_tokens(self, file_path, delimiter=' ', eos=None):
     """Read token excluding embeddings."""
     #self._index_token = np.genfromtxt(file_path, dtype='str')
-    self._index_token = Embedding.tokenize_files([file_path], delimiter, eos=None)
+    self._index_token = Embedding.tokenize_files([file_path], delimiter, eos=eos)
     #print('index token: ', self._index_token)
 
     self._token_index = {}
