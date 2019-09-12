@@ -28,6 +28,7 @@ from pagi.utils import image_utils
 from pagi.utils.np_utils import np_write_filters
 from pagi.utils.layer_utils import activation_fn
 from pagi.utils.tf_utils import tf_build_stats_summaries
+from pagi.components.summarize_levels import SummarizeLevels
 from pagi.components.summary_component import SummaryComponent
 
 
@@ -53,10 +54,12 @@ class AutoencoderComponent(SummaryComponent):
         momentum_nesterov=False,
         secondary=True,
         use_bias=True,  # Use bias in the encoding weighted sum
+        summarize_level=SummarizeLevels.ALL.value,
         summarize_encoding=False,
         summarize_decoding=False,
         summarize_input=False,
-        summarize_weights=False
+        summarize_weights=False,
+        max_outputs=3   # Number of outputs in TensorBoard
     )
 
   def build(self, input_values, input_shape, hparams, name='autoencoder', encoding_shape=None):
@@ -333,6 +336,10 @@ class AutoencoderComponent(SummaryComponent):
   def _build_summaries(self, batch_type=None, max_outputs=3):
     """Builds all summaries."""
     summaries = []
+    max_outputs = self._hparams.max_outputs
+
+    if self._hparams.summarize_level == SummarizeLevels.OFF.value:
+      return summaries
 
     encoding_op = self.get_encoding_op()
     decoding_op = self.get_decoding_op()

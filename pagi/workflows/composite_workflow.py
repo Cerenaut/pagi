@@ -19,55 +19,17 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import math
 import logging
 
 import numpy as np
 import tensorflow as tf
 
-from pagi.utils import image_utils
+from pagi.utils import image_utils, layer_utils
 from pagi.workflows.workflow import Workflow
 
 class CompositeWorkflow(Workflow):
   """The base workflow for working with composite components."""
-
-  # TEST_DECODES = []
-
-  # def _init_test_decodes(self):
-  #   sub_component_keys = list(self._component.get_sub_components().keys())
-
-  #   for i in range(len(sub_component_keys) - 1, 0, -1):
-  #     self.TEST_DECODES.append((sub_component_keys[i], sub_component_keys[i-1])) # (name, decoder)
-
-  #   self._num_repeats = len(self.TEST_DECODES) + 1
-
-  #   return self.TEST_DECODES
-
-  # def _setup_component(self):
-  #   """Setup the component"""
-  #   super()._setup_component()
-
-  #   self._init_test_decodes()
-
-  #   self._build_test_decodes_summaries()
-
-  # def _add_composite_decodes(self, name, composite_decoder):
-  #   """Calculate the number of decoders required. This takes into account any nested components."""
-  #   num_decoders = 1
-
-  #   try:
-  #     num_sub_components = len(self._component.get_sub_component(composite_decoder).get_sub_components())
-
-  #     if num_sub_components > 1:
-  #       num_decoders = num_sub_components
-  #   except AttributeError:
-  #     pass
-
-  #   for _ in range(num_decoders):
-  #     self.TEST_DECODES.append((name, composite_decoder))
-
-  # def _build_test_decodes_summaries(self):
-  #   for _, (name, decoder) in enumerate(self.TEST_DECODES):
-  #     self._component.build_secondary_decoding_summaries(name, decoder)
 
   def _setup_train_batch_types(self):
     sub_components = self._component.get_sub_components()
@@ -158,6 +120,20 @@ class CompositeWorkflow(Workflow):
       # Get placeholders
       secondary_decoding_input_pl = dual.get('secondary_decoding_input').get_pl()
       batch_type_pl = dual.get('batch_type').get_pl()
+
+      expected_shape = secondary_decoding_input_pl.get_shape().as_list()
+      encoding_shape = list(encoding.shape)
+
+      # Unpool the encoding to facilitate the decoding process
+      if expected_shape != encoding_shape:
+        pool_size = math.ceil(expected_shape[1] / encoding_shape[1])
+
+        if pool_size > 1:
+          unpool_op = layer_utils.unpool(encoding, pool_size, pool_size, pre_pooled_shape=expected_shape)
+          encoding = self._session.run(unpool_op)
+          encoding_shape = list(encoding.shape)
+
+        assert expected_shape == encoding_shape
 
       secondary_decoding_feed_dict = feed_dict.copy()
       secondary_decoding_feed_dict.update({

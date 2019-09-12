@@ -19,6 +19,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import errno
+import shutil
+
 import tensorflow as tf
 
 from pagi.components.dual_component import DualComponent
@@ -58,6 +61,13 @@ class SummaryComponent(DualComponent):
 
   def write_summaries(self, step, writer, batch_type='training'):
     if batch_type in self._summary_values.keys():
+      _, _, free = shutil.disk_usage(writer.get_logdir())  # total, used, free
+
+      # TODO: Instead of waiting till it reaches 0, we can adjust the check to be
+      # for a percentage of the total. Example: free > 0.10 * total (or something)
+      if free == 0:
+        raise OSError(errno.ENOSPC, 'No space left on device', writer.get_logdir())
+
       summary_values = self._summary_values[batch_type]
       writer.add_summary(summary_values, step)
       writer.flush()

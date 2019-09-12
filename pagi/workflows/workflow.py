@@ -346,7 +346,7 @@ class Workflow:
     self.evaluate(self._placeholders['dataset_handle'], self._dataset_iterators['eval_train'],
                   self._dataset_iterators['eval_test'], batch=batch)
 
-  def helper_validate(self, batch):
+  def helper_validate(self, batch):  # pylint: disable=unused-argument
     # Prepare inputs and run one batch
     return
 
@@ -420,7 +420,7 @@ class Workflow:
       batch_type = 'encoding'
     return batch_type
 
-  def training(self, training_handle, training_step, training_fetches=None):
+  def training_step(self, training_handle, global_step, phase_change=False, training_fetches=None):  # pylint: disable=unused-argument
     """The training procedure within the batch loop"""
 
     if training_fetches is None:
@@ -429,7 +429,7 @@ class Workflow:
     batch_type = self._setup_train_batch_types()
     feed_dict = self._setup_train_feed_dict(batch_type, training_handle)
     self.step_graph(self._component, feed_dict, batch_type, training_fetches)
-    self._component.write_summaries(training_step, self._writer, batch_type=batch_type)
+    self._component.write_summaries(global_step, self._writer, batch_type=batch_type)
 
     return feed_dict
 

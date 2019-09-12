@@ -15,25 +15,24 @@
 
 """SparseConvAutoencoderMaxPoolComponent class."""
 
-import logging
-
 import numpy as np
 import tensorflow as tf
 
-from pagi.components.conv_autoencoder_component import ConvAutoencoderComponent
+from pagi.utils import image_utils, layer_utils
 from pagi.components.summarize_levels import SummarizeLevels
-from pagi.utils import image_utils
-from pagi.utils import layer_utils
-
+from pagi.components.conv_autoencoder_component import ConvAutoencoderComponent
 from pagi.components.sparse_conv_autoencoder_component import SparseConvAutoencoderComponent
+
 
 class SparseConvAutoencoderMaxPoolComponent(SparseConvAutoencoderComponent):
   """
   Sparse Convolutional Autoencoder with Max Pooling.
 
   Max pooling is controlled with hparam 'use_max_pooling'.
-  use_max_pooling == 'encoding'
+  use_max_pooling in ['encoding', 'encoding_pooled', 'encoding_unpooled']
     - do not do pooling for training, but pool/unpool the encoding and make them available via an op
+    - the distinction between encoding_pooled and encoding_unpooled is to allow components to specify
+      whether they want to pass the pooled encoding or unpooled encoding to the next component
 
   use_max_pooling == 'training'
     - pool and unpool the encoding in recon path, and hence used for training
@@ -60,9 +59,8 @@ class SparseConvAutoencoderMaxPoolComponent(SparseConvAutoencoderComponent):
     self._crop_unpooled = True
 
   def _create_encoding_shape_4d(self, input_shape):
-
+    """Calculates the encoding shape after convolution and optional pooling operations."""
     padding = 'SAME'
-
     encoding_shape = ConvAutoencoderComponent.get_convolved_shape(input_shape, self._hparams.filters_field_height,
                                                                   self._hparams.filters_field_width,
                                                                   self._hparams.filters_field_stride,
@@ -94,11 +92,13 @@ class SparseConvAutoencoderMaxPoolComponent(SparseConvAutoencoderComponent):
   def _build(self):
     """
     Build the subgraph for this component.
-    If max_pool == 'encoding', apply pooling/unpooling, and set ops for later retrieval
+
+    If max_pool == ['encoding', 'encoding_pooled', 'encoding_unpooled'], apply pooling/unpooling,
+    and set ops for later retrieval
     """
     super()._build()
 
-    if self._hparams.use_max_pool == 'encoding':
+    if self._hparams.use_max_pool in ['encoding', 'encoding_pooled', 'encoding_unpooled']:
       encoding = self._dual.get_op('encoding')        # note: after the stop gradient
       pooled, unpooled = self.pool_unpool(encoding)
 
@@ -118,8 +118,14 @@ class SparseConvAutoencoderMaxPoolComponent(SparseConvAutoencoderComponent):
 
     self._pre_pooled_shape = training_filtered.get_shape().as_list()
 
-    pooled_training_filtered, _ = self.pool(training_filtered)
-    pooled_testing_filtered, _ = self.pool(testing_filtered)
+    pool_size = self._hparams.pool_size
+    pool_strides = self._hparams.pool_strides
+
+    pooled_training_filtered, _ = layer_utils.pool(training_filtered, pool_size, pool_strides,
+                                                   unpooling_mode=self._hparams.use_unpooling)
+
+    pooled_testing_filtered, _ = layer_utils.pool(testing_filtered, pool_size, pool_strides,
+                                                  unpooling_mode=self._hparams.use_unpooling)
 
     self._dual.set_op('encoding_pooled', pooled_testing_filtered)   # !!! Before stop gradient
 
@@ -127,7 +133,11 @@ class SparseConvAutoencoderMaxPoolComponent(SparseConvAutoencoderComponent):
 
   def _build_decoding(self, hidden_name, decoding_shape, filtered):
     if self._hparams.use_max_pool in ['training']:
-      unpooled_filtered = self.unpool(filtered, pre_pooled_shape=self._pre_pooled_shape)
+      unpooled_filtered = layer_utils.unpool(filtered, self._hparams.pool_size, self._hparams.pool_strides,
+                                             unpooling_mode=self._hparams.use_unpooling,
+                                             crop_unpooled=self._crop_unpooled,
+                                             pre_pooled_shape=self._pre_pooled_shape)
+
       self._dual.set_op('encoding_unpooled', unpooled_filtered)
 
       # If this option is on, the encoder will be outputting a pooled encoding so we need to unpool prior to decoding
@@ -140,8 +150,8 @@ class SparseConvAutoencoderMaxPoolComponent(SparseConvAutoencoderComponent):
     super().add_fetches(fetches, batch_type)
 
     if self._hparams.use_max_pool in ['training', 'encoding']:
-      fetches[self._name]['encoding_pooled'] = self.get_encoding_pooled_op()
-      fetches[self._name]['encoding_unpooled'] = self.get_encoding_unpooled_op()
+      fetches[self.name]['encoding_pooled'] = self.get_encoding_pooled_op()
+      fetches[self.name]['encoding_unpooled'] = self.get_encoding_unpooled_op()
 
   def set_fetches(self, fetched, batch_type='training'):
     super().set_fetches(fetched, batch_type)
@@ -152,31 +162,32 @@ class SparseConvAutoencoderMaxPoolComponent(SparseConvAutoencoderComponent):
     self._dual.set_fetches(fetched, names)
 
   def _build_summaries(self, batch_type=None, max_outputs=3):
-
+    """Builds TensorBoard summaries."""
     summaries = []
     if self._hparams.summarize_level == SummarizeLevels.OFF.value:
       return summaries
 
     max_outputs = self._hparams.max_outputs
-    summaries = super()._build_summaries(max_outputs)
+    summaries = super()._build_summaries(batch_type, max_outputs)
 
-    if self.get_encoding_pooled_op() is not None:
-      encoding_pooled = self.get_encoding_pooled_op()
-      encoding_pooled_shape = encoding_pooled.get_shape().as_list()
-      encoding_pooled_volume = np.prod(encoding_pooled_shape[1:])
-      encoding_pooled_square_image_shape, _ = image_utils.square_image_shape_from_1d(encoding_pooled_volume)
+    if self._hparams.summarize_encoding:
+      if self.get_encoding_pooled_op() is not None:
+        encoding_pooled = self.get_encoding_pooled_op()
+        encoding_pooled_shape = encoding_pooled.get_shape().as_list()
+        encoding_pooled_volume = np.prod(encoding_pooled_shape[1:])
+        encoding_pooled_square_image_shape, _ = image_utils.square_image_shape_from_1d(encoding_pooled_volume)
 
-      encoding_pooled_reshaped = tf.reshape(encoding_pooled, encoding_pooled_square_image_shape)
-      summaries.append(tf.summary.image('encoding_pooled', encoding_pooled_reshaped, max_outputs=max_outputs))
+        encoding_pooled_reshaped = tf.reshape(encoding_pooled, encoding_pooled_square_image_shape)
+        summaries.append(tf.summary.image('encoding_pooled', encoding_pooled_reshaped, max_outputs=max_outputs))
 
-    if self.get_encoding_unpooled_op() is not None:
-      encoding_unpooled = self.get_encoding_unpooled_op()
-      encoding_unpooled_shape = encoding_unpooled.get_shape().as_list()
-      encoding_unpooled_volume = np.prod(encoding_unpooled_shape[1:])
-      encoding_unpooled_square_image_shape, _ = image_utils.square_image_shape_from_1d(encoding_unpooled_volume)
+      if self.get_encoding_unpooled_op() is not None:
+        encoding_unpooled = self.get_encoding_unpooled_op()
+        encoding_unpooled_shape = encoding_unpooled.get_shape().as_list()
+        encoding_unpooled_volume = np.prod(encoding_unpooled_shape[1:])
+        encoding_unpooled_square_image_shape, _ = image_utils.square_image_shape_from_1d(encoding_unpooled_volume)
 
-      encoding_unpooled_reshaped = tf.reshape(encoding_unpooled, encoding_unpooled_square_image_shape)
-      summaries.append(tf.summary.image('encoding_unpooled', encoding_unpooled_reshaped, max_outputs=max_outputs))
+        encoding_unpooled_reshaped = tf.reshape(encoding_unpooled, encoding_unpooled_square_image_shape)
+        summaries.append(tf.summary.image('encoding_unpooled', encoding_unpooled_reshaped, max_outputs=max_outputs))
 
     return summaries
 
@@ -195,71 +206,8 @@ class SparseConvAutoencoderMaxPoolComponent(SparseConvAutoencoderComponent):
     pool_size = self._hparams.pool_size
     pool_strides = self._hparams.pool_strides
 
-    pooled, mask = self.pool(tensor, pool_size, pool_strides)
-    unpooled = self.unpool(pooled, pool_size, pool_strides, mask, pre_pooled_shape=tensor.shape.as_list())
+    pooled, mask = layer_utils.pool(tensor, pool_size, pool_strides, unpooling_mode=self._hparams.use_unpooling)
+    unpooled = layer_utils.unpool(pooled, pool_size, pool_strides, mask, unpooling_mode=self._hparams.use_unpooling,
+                                  crop_unpooled=self._crop_unpooled, pre_pooled_shape=tensor.shape.as_list())
 
     return pooled, unpooled
-
-  def pool(self, tensor, pool_size=None, pool_strides=None):
-    """Perform the Max Pooling operation on a tensor."""
-    if pool_size is None:
-      pool_size = self._hparams.pool_size
-    if pool_strides is None:
-      pool_strides = self._hparams.pool_strides
-
-    mask = None
-
-    if self._hparams.use_unpooling == 'argmax':
-      pooled, mask = layer_utils.max_pool_with_argmax(tensor,
-                                                      pool_size,
-                                                      pool_strides,
-                                                      padding='SAME')
-    else:
-      pooled = tf.layers.max_pooling2d(tensor, pool_size, pool_strides, padding='SAME')
-
-    return pooled, mask
-
-  def unpool(self, pooled_tensor, pool_size=None, pool_strides=None, indices=None, pre_pooled_shape=None):
-    """Performs unpooling on an existing pooled tensor."""
-    del indices
-
-    if pool_size is None:
-      pool_size = self._hparams.pool_size
-    if pool_strides is None:
-      pool_strides = self._hparams.pool_strides
-
-    if self._hparams.use_unpooling == 'argmax':  # pylint: disable=no-else-raise
-      raise RuntimeWarning('Unpool with argmax is currently not working. See comments in code.')
-
-      # TODO: unpool_with_argmax uses indices/scatter_nd, and currently
-      # does not work with batch_size > 1. Keeping it here as it might come in
-      # handy later if we ever need to restore the true max positions.
-
-      # unpooled = layer_utils.unpool_with_argmax(pooled_tensor, indices,
-      #                                           ksize=[1, pool_size, pool_size, 1])
-
-    elif self._hparams.use_unpooling == 'fixed':
-      unpooled = layer_utils.unpool_with_fixed(pooled_tensor, pool_strides, mode='zeros')
-    else:
-      raise NotImplementedError('Unpooling method not supported: ' + str(self._hparams.use_unpooling))
-
-    # crop the unpooled value to match dimensions with pre-pooled version
-    if self._crop_unpooled and pre_pooled_shape is not None:
-
-      height = pre_pooled_shape[1]
-      width = pre_pooled_shape[2]
-
-      unpooled = tf.image.crop_to_bounding_box(unpooled, 0, 0, height, width)
-
-      unpooled_shape = unpooled.shape.as_list()
-      up_height = unpooled_shape[1]
-      up_width = unpooled_shape[2]
-
-      if up_height > height or up_width > width:
-        logging.warning("Un-Pooled volume was cropped, up-height %d, up-width: %d, height %d, width: %d.",
-                        up_height,
-                        up_width,
-                        height,
-                        width)
-
-    return unpooled
