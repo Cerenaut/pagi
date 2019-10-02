@@ -164,8 +164,13 @@ class AutoencoderComponent(SummaryComponent):
                                       filtered_encoding_with_gain)
       self._dual.set_op('decoding', decoding)
 
+  def _build_kernel_init(self, input_area, hidden_size):
+    del input_area, hidden_size
+    kernel_initializer = None  # default
+    return kernel_initializer
+
   def _build_weighted_sum(self, input_tensor, add_bias=True, trainable=True):
-    """Compute the weighted sum using a Dense layer."""
+    """Compute the weighted sum using a fc layer."""
     input_shape = input_tensor.get_shape().as_list()
     input_area = np.prod(input_shape[1:])
 
@@ -180,13 +185,17 @@ class AutoencoderComponent(SummaryComponent):
     input_vector = tf.reshape(input_tensor, batch_input_shape, name=name)
     logging.debug(input_vector)
 
-    # Compute the weighted sum
+    # Initializer for the weights
+    kernel_initializer = self._build_kernel_init(input_area, hidden_size)
+
+    # weighted sum
     # -----------------------------------------------------------------
     weighted_sum = tf.layers.dense(inputs=input_vector,
                                    units=hidden_size,
                                    activation=None,       # Note we use our own non-linearity, elsewhere.
                                    use_bias=add_bias,
                                    name=hidden_name,
+                                   kernel_initializer=kernel_initializer,
                                    trainable=trainable)
 
     with tf.variable_scope(hidden_name, reuse=tf.AUTO_REUSE, auxiliary_name_scope=False):
