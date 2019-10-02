@@ -38,12 +38,19 @@ def log_param(hparams):
     pass
 
 
-def log_metric(metrics):
+def log_metrics(metrics):
   """Log multiple metrics from a dict."""
   try:
     validate_dict(metrics)
 
     for key, value in metrics.items():
       mlflow.log_metric(key, value)
+  except:  # pylint: disable=bare-except
+    pass
+
+def log_metric(name, value):
+  """Log one metric by name and value"""
+  try:
+    mlflow.log_metric(name, value)
   except:  # pylint: disable=bare-except
     pass
