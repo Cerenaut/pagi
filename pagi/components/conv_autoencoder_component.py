@@ -210,6 +210,7 @@ class ConvAutoencoderComponent(AutoencoderComponent):
   def set_norm_filters(self, val):
     self._norm_filters = val
 
+  # TODO: Needs re-work, doesn't actually work since its a method not an attribute
   def _weights(self):
     """
     Norm the weights.
