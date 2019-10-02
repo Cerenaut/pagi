@@ -21,6 +21,42 @@ import numpy as np
 import tensorflow as tf
 
 
+def tf_centre_of_mass(images, shape):
+  
+  # Input volumes
+  b = shape[0]
+  h = shape[1]
+  w = shape[2]
+  c = shape[3]
+  #print('b/h/w/c ', b, h, w, c)
+
+  y_indices = np.zeros((1, h, 1, 1))
+  x_indices = np.zeros((1, 1, w, 1))
+
+  for y in range(h):
+    y_indices[0][y][0][0] = y
+  for x in range(w):
+    x_indices[0][0][x][0] = x
+
+  y_indices = tf.constant(y_indices, dtype=tf.float32)
+  x_indices = tf.constant(x_indices, dtype=tf.float32)
+
+  sum_y = tf.reduce_sum(images * y_indices, axis=[1,2,3])
+  sum_x = tf.reduce_sum(images * x_indices, axis=[1,2,3])
+  sum_p = tf.reduce_sum(images, axis=[1,2,3])
+
+  mean_y = sum_y / sum_p
+  mean_x = sum_x / sum_p
+
+  # mean_x = tf.Print(mean_x, [sum_y], 'sum y: ')
+  # mean_x = tf.Print(mean_x, [sum_x], 'sum x: ')
+  # mean_x = tf.Print(mean_x, [sum_p], 'sum p: ')
+
+  centre_of_mass = tf.concat([mean_x, mean_y], axis=0)
+  #centre_of_mass = tf.Print(centre_of_mass, [centre_of_mass], 'CoM: ')
+  return centre_of_mass
+
+
 def tf_get_summary_tag(batch_type, component_name, summary_name):
   tag = component_name + '/summaries/' + batch_type + '/' + summary_name
   return tag
@@ -110,6 +146,13 @@ def tf_build_interpolate_distributions(distributions, distribution_mass, num_cla
 def tf_invert(feature, label):
   inverted = 1.0 - feature
   return inverted, label
+
+
+def tf_invert_values(values, max_val=None):
+  if max_val is None:
+    max_val = tf.reduce_max(values, keepdims=True)
+  inverted = max_val - values
+  return inverted
 
 
 def tf_set_min(source, label, tgt_min, current_min=0):

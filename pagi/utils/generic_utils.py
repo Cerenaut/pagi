@@ -31,14 +31,20 @@ import tensorflow as tf
 from absl import logging
 
 
+def summary_name(batch_type):
+  return 'summary_' + batch_type
+
+
 def get_summary_dir():
   now = datetime.datetime.now()
   summary_dir = './run/summaries_' + now.strftime("%Y%m%d-%H%M%S") + '/'
   return summary_dir
 
+
 def get_logging():
   level = logging.getLogger().getEffectiveLevel()
   return level
+
 
 def set_logging(level):
   logging._warn_preinit_stderr = 0  # pylint: disable=protected-access

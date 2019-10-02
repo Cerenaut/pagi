@@ -112,6 +112,8 @@ class AutoencoderComponent(SummaryComponent):
     batch_type_pl = self._dual.add('batch_type', shape=[], default_value='training').add_pl(
         default=True, dtype=tf.string)
 
+    self._dual.set_op('inputs', self._input_values)
+
     with tf.name_scope('encoder'):
       input_shape = self._input_values.get_shape().as_list()
 
@@ -292,6 +294,9 @@ class AutoencoderComponent(SummaryComponent):
   def get_features(self, batch_type='training'):  # pylint: disable=W0613
     return self.get_encoding()
 
+  def get_inputs(self):
+    return self._dual.get_values('inputs')
+
   # MODULAR INTERFACE ------------------------------------------------------------------
   def reset(self):
     """Reset the trained/learned variables and all other state of the component to a new random state."""
@@ -311,7 +316,7 @@ class AutoencoderComponent(SummaryComponent):
 
   def add_fetches(self, fetches, batch_type='training'):
     """Adds ops that will get evaluated."""
-    names = ['loss', 'encoding', 'decoding']
+    names = ['loss', 'encoding', 'decoding', 'inputs']
 
     if batch_type == 'training':
       names.extend(['training'])
@@ -327,7 +332,7 @@ class AutoencoderComponent(SummaryComponent):
     # Loss (not a tensor)
     self._loss = fetched[self.name]['loss']
 
-    names = ['encoding', 'decoding']
+    names = ['encoding', 'decoding', 'inputs']
     self._dual.set_fetches(fetched, names)
 
     # Summaries

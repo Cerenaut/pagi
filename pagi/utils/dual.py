@@ -37,12 +37,18 @@ class DualData:
   def set_root_name(self, root_name):
     self._root_name = root_name
 
-  def set_op(self, name, op, shape=None, default_value=None):
+  def set_op(self, name, op, shape=None, default_value=None, override=False):
+    """Adds a new op (or, optionally modifies an existing one) in the Dual data structure."""
     if name in self._duals.keys():
-      dual = self._duals[name]
+      if override:
+        dual = self._duals[name]
+        dual.set_op(op)
+      else:
+        raise RuntimeError("Trying to set an op that already exists. "
+                           "If you are sure you want to do this, then set override to True.")
     else:
       dual = self.add(name, shape, default_value)
-    dual.set_op(op)
+      dual.set_op(op)
 
   def get_pl(self, name):
     if name in self._duals.keys():

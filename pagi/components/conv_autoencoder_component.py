@@ -37,6 +37,11 @@ class ConvAutoencoderComponent(AutoencoderComponent):
   sparsening.
   """
 
+  def __init__(self):
+    super().__init__()
+
+    self._norm_filters = False
+
   @staticmethod
   def default_hparams():
     """Builds an HParam object with default hyperparameters."""
@@ -201,3 +206,30 @@ class ConvAutoencoderComponent(AutoencoderComponent):
   def get_filters(self, session):
     weights_values = session.run(self._weights)
     return weights_values
+
+  def set_norm_filters(self, val):
+    self._norm_filters = val
+
+  def _weights(self):
+    """
+    Norm the weights.
+
+    Weights shape = [b, h, w, z]
+    We want each filter to have sum 1 when in encoding
+    """
+
+    def norm_weights(filters):
+      mute_dbug = False
+      filters = tf_print(filters, "filters: ", mute=mute_dbug)
+      frobenius_norm = tf.sqrt(tf.reduce_sum(tf.square(filters), axis=[1, 2, 3], keepdims=True))   # [b, z]
+      frobenius_norm = tf_print(frobenius_norm, "filter sums: ", mute=mute_dbug)
+      w = filters / frobenius_norm
+      w = tf_print(w, "weights normed: ", mute=mute_dbug)
+      return w
+
+    weights = tf.cond(tf.logical_and(tf.equal(self._batch_type, 'encoding'),
+                                     tf.equal(self._norm_filters, True)),
+                      lambda: norm_weights(self._weights),
+                      lambda: self._weights)
+
+    return weights

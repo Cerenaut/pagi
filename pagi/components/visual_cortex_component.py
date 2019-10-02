@@ -54,12 +54,13 @@ class VisualCortexComponent(CompositeComponent):
     return self.get_sub_component(self._hparams.output_features).get_loss()
 
   def get_inputs(self):
-    vc0 = self._sub_components['vc0']
-    inputs = vc0.get_inputs()
-    return inputs
+    return self.get_sub_component_by_idx(0).get_inputs()
 
   def get_output(self):
     return self.get_sub_component(self._hparams.output_features).get_encoding()
+
+  def get_output_op(self):
+    return self.get_sub_component(self._hparams.output_features).get_encoding_op()
 
   def use_sum_norm(self, layer_idx):
     return self._hparams.sum_norm[layer_idx] != -1 and self._hparams.sum_norm[layer_idx] > 0
@@ -140,6 +141,10 @@ class VisualCortexComponent(CompositeComponent):
         self._output = input_values_next
 
     self.reset()
+
+  def get_layer_name(self, layer):
+    """Override default layer_name for backwards compatibility."""
+    return self.name + str(layer)
 
   def get_encoding_op(self, name='output'):
     vc = self.get_sub_component(name)

@@ -54,7 +54,7 @@ class SummaryComponent(DualComponent):
       for batch_type in batch_types:
         with tf.name_scope(batch_type):
           summaries = self._build_summaries(batch_type, max_outputs)
-          if summaries is not None:
+          if summaries:
             summary_op = tf.summary.merge(summaries)
             self._summary_ops[batch_type] = summary_op
             #self._summary_values[batch_type] = None  # Init

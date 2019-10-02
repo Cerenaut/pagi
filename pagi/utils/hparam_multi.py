@@ -24,6 +24,13 @@ class HParamMulti:
   """
 
   @staticmethod
+  def set_hparam_in_subcomponents(subcomponents, hparam_name, val):
+    """Sets the common hparams to sub components."""
+    for comp in subcomponents:
+      comp.set_hparam(hparam_name, val)
+    return subcomponents
+
+  @staticmethod
   def add(multi, source, component):
     """
     Prepend component namespace to hparams of source, and store in multi.

@@ -143,10 +143,17 @@ def np_write_filters(filters, filter_shape, file_name='filters.png'):
   logging.debug('save filters OK')
 
 
-def print_simple_stats(arr, name):
-  min_ = np.min(arr)
-  max_ = np.max(arr)
-  print('{0} (min, max) = ({1},{2})'.format(name, min_, max_))
+def print_simple_stats(arr, name, verbose=False, normalise_by=1):
+  mn = np.min(arr)/normalise_by
+  mx = np.max(arr)/normalise_by
+
+  if not verbose:
+    print('{0} (min, max) = ({1},{2})'.format(name, mn, mx))
+  else:
+    mean = np.mean(np.divide(arr, normalise_by))
+    std = np.std(np.divide(arr, normalise_by))
+    sumx = np.sum(arr)
+    print('{0} (sum,min,max,mean,std) = ({1:.0f},{2:.2f},{3:.2f},{4:.3f},{5:.2f})'.format(name, sumx, mn, mx, mean, std))
 
 
 def np_accuracy(predicted_labels, labels):
@@ -154,11 +161,13 @@ def np_accuracy(predicted_labels, labels):
   accuracy = np.mean(correct_predictions)
   return accuracy
 
+
 def np_uniform(num_classes):
   uniform_value = 1.0 / float(num_classes)
   uniform = np.zeros([1, num_classes])
   uniform.fill(uniform_value)
   return uniform
+
 
 def np_interpolate_distributions(distributions, distribution_mass, num_classes):
   num_models = len(distributions)
@@ -171,10 +180,12 @@ def np_interpolate_distributions(distributions, distribution_mass, num_classes):
     combined = combined + y_i
   return combined
 
+
 def np_softmax(x):
   """Compute softmax values for each sets of scores in x."""
   e_x = np.exp(x - np.max(x))
   return e_x / e_x.sum(axis=0) # only difference
+
 
 def np_pad_with(vector, pad_width, iaxis, kwargs):
   del iaxis

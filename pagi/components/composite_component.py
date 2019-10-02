@@ -51,6 +51,10 @@ class CompositeComponent(SummaryComponent):
   def get_sub_components(self):
     return self._sub_components
 
+  def get_sub_component_by_idx(self, idx):
+    keys = list(self._sub_components.keys())
+    return self._sub_components[keys[idx]]
+
   def get_sub_component(self, name):
     if name == 'output':
       name = list(self._sub_components.keys())[-1]  # Get output component
