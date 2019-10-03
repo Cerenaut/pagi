@@ -301,7 +301,7 @@ class Workflow:
     """
     # Get and record the loss for this batch
     status = self._get_status()
-    logger_utils.log_metric({'status': status})
+    logger_utils.log_metrics({'status': status})
 
     # Output the results to console
     do_print = True
@@ -448,7 +448,7 @@ class Workflow:
     results = harness.classify()
     best_result = max(results, key=lambda x: x['test']['accuracy'])
 
-    logger_utils.log_metric({
+    logger_utils.log_metrics({
         'train_accuracy': best_result['train']['accuracy'],
         'test_accuracy': best_result['test']['accuracy']
     })
