@@ -39,6 +39,11 @@ class CompositeWorkflow(Workflow):
       name = self._component.name + '/' + key
       batch_types[name] = 'training'
 
+    # Add batch type for composite component itself
+    batch_types.update({
+        self._component.name + '/' + self._component.name: 'training'
+    })
+
     if self._checkpoint_opts['checkpoint_frozen_scope']:
       for key in self._checkpoint_opts['checkpoint_frozen_scope'].split(','):
         key = key.lstrip().rstrip()
