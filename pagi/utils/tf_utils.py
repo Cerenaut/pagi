@@ -20,6 +20,38 @@ import logging
 import numpy as np
 import tensorflow as tf
 
+tf_init_type_zero = 'zero'
+tf_init_type_none = 'none'
+tf_init_type_glorot_uniform = 'glorot_uniform'
+tf_init_type_xavier = 'xavier'
+tf_init_type_he = 'he'
+tf_init_type_truncated_normal = 'truncated_normal'
+tf_init_type_normal = 'normal'
+
+def tf_get_kernel_initializer(init_type=tf_init_type_none, initial_sd=None):
+  if init_type == tf_init_type_none:
+    return None
+  elif init_type == tf_init_type_zero:
+    return tf.zeros_initializer
+  elif init_type == tf_init_type_he:
+    init_factor = 2.0
+    init_mode = 'FAN_IN'
+    return tf.contrib.layers.variance_scaling_initializer(factor=init_factor, mode=init_mode, uniform=False)
+  elif init_type == tf_init_type_xavier:
+    init_factor = 1.0
+    init_mode = 'FAN_AVG'
+    return tf.contrib.layers.variance_scaling_initializer(factor=init_factor, mode=init_mode, uniform=False)
+  elif init_type == tf_init_type_glorot_uniform:
+    # uniform distribution within [-limit, limit] where limit is sqrt(6 / (fan_in + fan_out))
+    return tf.initializers.glorot_uniform
+  elif init_type == tf_init_type_truncated_normal:
+    kernel_initializer = tf.truncated_normal_initializer(stddev=initial_sd)
+    return kernel_initializer
+  elif init_type == tf_init_type_normal:
+    kernel_initializer = tf.random_normal_initializer(stddev=initial_sd)
+    return kernel_initializer
+  else:
+    raise NotImplementedError('Initializer not supported: ' + str(init_type))
 
 def tf_centre_of_mass(images, shape):
   
