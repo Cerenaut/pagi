@@ -34,85 +34,184 @@ from skimage.draw import line_aa
 
 
 def degrade_image(image, label=None, degrade_type='horizontal', degrade_value=0, degrade_factor=0.5, random_value=0.0):
+  """
+
+  :param image:
+  :param label:
+  :param degrade_type: the type of degradation 'vertical, horizontal, random or rect'
+  :param degrade_value: The value to set degraded bits
+  :param degrade_factor: if relevant for the type, generally proportion to degrade
+  :param random_value: if relevant for the type, make it deterministic by passing in a proxy for the 'random value'
+  :return:
+  """
+
+  if degrade_type == 'vertical' or degrade_type == 'horizontal':
+    return degrade_image_half(image, label=label,
+                              degrade_type=degrade_type,
+                              degrade_value=degrade_value,
+                              random_value=random_value)
+  elif degrade_type == 'random':
+    return degrade_image_random(image, label=label,
+                                degrade_value=degrade_value,
+                                degrade_factor=degrade_factor)
+  elif degrade_type == 'rect' or degrade_type == 'circle':
+    return degrade_image_shape(image, label=label,
+                               degrade_value=degrade_value,
+                               rect_size=degrade_factor,
+                               shape_type=degrade_type)
+  else:
+    raise RuntimeError("Degrade type {0} not supported.".format(degrade_type))
+
+
+def degrade_image_shape(image, label=None,
+                        degrade_value=0,
+                        rect_size=0.0,
+                        shape_type='rect'):
+  """
+
+  :param image:
+  :param label:
+  :param degrade_value:
+  :param rect_size: radius expressed as proportion of image (half height or width for rectangle)
+  :param shape_type: rect or circle
+  :return:
+  """
+
+  image_shape = image.shape.as_list()
+  image_size = np.prod(image_shape[1:])
+
+  height = image_shape[1]
+  width = image_shape[2]
+
+  r = tf.cast(rect_size * height, tf.int64)  # expressed as pixels (choose height, assume square)
+
+  # random start position
+  batch_size = image_shape[0]
+  xs = tf.random_uniform(shape=[batch_size, 1], minval=r, maxval=width-r, dtype=tf.int64)
+  ys = tf.random_uniform(shape=[batch_size, 1], minval=r, maxval=height-r, dtype=tf.int64)
+
+  int_image = tf.range(0, image_size)
+  col = int_image % width  # same shape as image tensor, but values are the col idx
+  row = tf.to_int64(int_image / height)  # same but for row idx
+
+  col = tf.expand_dims(col, axis=0)   # add a batch dimension
+  row = tf.expand_dims(row, axis=0)
+
+  if shape_type == 'rect':
+    mask_x = tf.logical_or((col < xs), (col > xs + 2*r))
+    mask_y = tf.logical_or((row < ys), (row > ys + 2*r))
+    preserve_mask = tf.logical_or(mask_x, mask_y)
+  elif shape_type == 'circle':
+    circle_r = tf.square(col - xs) + tf.square(row - ys)
+    preserve_mask = circle_r > tf.square(r)
+  else:
+    raise RuntimeError("Shape type : {0} not supported.".format(shape_type))
+
+  preserve_mask = tf.to_float(preserve_mask)
+  preserve_mask = tf.reshape(preserve_mask, [-1, image_shape[1], image_shape[2], 1])
+  degraded_image = tf.multiply(image, preserve_mask)
+
+  # now set the 'degraded' pixels to chosen value
+  degraded_mask = 1.0 - preserve_mask
+  degraded_mask_vals = degrade_value * degraded_mask
+  degraded_image = degraded_image + degraded_mask_vals
+
+  if label is None:
+    return degraded_image
+  return degraded_image, label
+
+
+def degrade_image_half(image, label=None,
+                       degrade_type='horizontal',
+                       degrade_value=0,
+                       random_value=0.0):
   """Degrade the image by randomly removing one of image halves."""
   image_shape = image.shape.as_list()
   image_size = np.prod(image_shape[1:])
 
-  if degrade_type in ['vertical', 'horizontal']:
+  # # Miconi method
+  # image = tf.reshape(image, [-1, image_size])
+  #
+  # preserved = np.ones(image_size)
+  # preserved[int(image_size / 2):] = 0                  # [ 1's, 0's ]
+  #
+  # degraded_vals = np.ones(image_size)
+  # degraded_vals[:] = degrade_value
+  # degraded_vals[:int(image_size/2)] = 0               # [ 0's, dv's ]   # dv = degrade value
 
-    # # Miconi method
-    # image = tf.reshape(image, [-1, image_size])
-    #
-    # preserved = np.ones(image_size)
-    # preserved[int(image_size / 2):] = 0                  # [ 1's, 0's ]
-    #
-    # degraded_vals = np.ones(image_size)
-    # degraded_vals[:] = degrade_value
-    # degraded_vals[:int(image_size/2)] = 0               # [ 0's, dv's ]   # dv = degrade value
+  # deal with 1d samples (or 2d image)
+  if len(image_shape) == 2:
+    preserved = np.ones(image_size)
+    degraded_vals = np.zeros(image_size)
+    degraded_vals[:] = degrade_value
 
-    # deal with 1d samples (or 2d image)
-    if len(image_shape) == 2:
-      preserved = np.ones(image_size)
-      degraded_vals = np.zeros(image_size)
-      degraded_vals[:] = degrade_value
+    preserved[int(image_size / 2):] = 0
+    degraded_vals[:int(image_size / 2)] = 0
 
-      preserved[int(image_size / 2):] = 0
-      degraded_vals[:int(image_size / 2)] = 0
+  # 2d image
+  else:
+    sample_shape = image_shape[1:]
+    width = image_shape[1]
+    height = image_shape[2]
 
-    # 2d image
-    else:
-      sample_shape = image_shape[1:]
-      width = image_shape[1]
-      height = image_shape[2]
+    preserved = np.ones(sample_shape)
+    degraded_vals = np.zeros(sample_shape)
+    degraded_vals[:] = degrade_value
 
-      preserved = np.ones(sample_shape)
-      degraded_vals = np.zeros(sample_shape)
-      degraded_vals[:] = degrade_value
+    if degrade_type == 'vertical':
+      # the whole row (width), half the columns (height)
+      preserved[:, int(width / 2):] = 0
+      degraded_vals[:, 0:int(width / 2)] = 0
 
-      if degrade_type == 'vertical':
-        # the whole row (width), half the columns (height)
-        preserved[:, int(width/2):] = 0
-        degraded_vals[:, 0:int(width/2)] = 0
+    if degrade_type == 'horizontal':
+      # half the row (width), all the columns (width)
+      preserved[int(height / 2):, :] = 0
+      degraded_vals[0:int(height / 2), :] = 0
 
-      if degrade_type == 'horizontal':
-        # half the row (width), all the columns (width)
-        preserved[int(height/2):, :] = 0
-        degraded_vals[0:int(height/2), :] = 0
+  preserved = tf.convert_to_tensor(preserved, dtype=image.dtype)
+  degraded_vals = tf.convert_to_tensor(degraded_vals, dtype=image.dtype)
 
-    preserved = tf.convert_to_tensor(preserved, dtype=image.dtype)
-    degraded_vals = tf.convert_to_tensor(degraded_vals, dtype=image.dtype)
+  # Use random number generator, or specified random value
+  rand_value = tf.cond(tf.cast(random_value, tf.float32) > 0,
+                       lambda: random_value,
+                       lambda: tf.random_uniform([]))
 
-    # Use random number generator, or specified random value
-    rand_value = tf.cond(tf.cast(random_value, tf.float32) > 0,
-                         lambda: random_value,
-                         lambda: tf.random_uniform([]))
+  # Randomly remove either half of the image
+  rand_half = rand_value < .5  # randomly choose a half
+  preserved = tf.cond(rand_half, lambda: 1 - preserved, lambda: preserved)  # swap 1's and 0's
+  degraded_vals = tf.cond(rand_half, lambda: degrade_value - degraded_vals,
+                          lambda: degraded_vals)  # swap dv's and 0's
+  degraded_image = image * preserved  # zero out non-preserved bits
+  degraded_image = degraded_image + degraded_vals  # add degrade_value at appropriate places (where it was zero)
 
-    # Randomly remove either half of the image
-    rand_half = rand_value < .5  # randomly choose a half
-    preserved = tf.cond(rand_half, lambda: 1 - preserved, lambda: preserved)  # swap 1's and 0's
-    degraded_vals = tf.cond(rand_half, lambda: degrade_value - degraded_vals,
-                            lambda: degraded_vals)  # swap dv's and 0's
-    degraded_image = image * preserved  # zero out non-preserved bits
-    degraded_image = degraded_image + degraded_vals  # add degrade_value at appropriate places (where it was zero)
+  degraded_image = tf.reshape(degraded_image, image_shape, name='degraded_image')
 
-    degraded_image = tf.reshape(degraded_image, image_shape, name='degraded_image')
+  if label is None:
+    return degraded_image
+  return degraded_image, label
 
-  else:  # random
-    preserve_mask = np.ones(image_size)
-    preserve_mask[:int(degrade_factor * image_size)] = 0
-    preserve_mask = tf.convert_to_tensor(preserve_mask, dtype=tf.float32)
-    preserve_mask = tf.random_shuffle(preserve_mask)
 
-    degrade_vec = np.ones(image_size)
-    degrade_vec[:] = degrade_value
-    degrade_vec = tf.convert_to_tensor(degrade_vec, dtype=tf.float32)
-    degrade_vec = degrade_vec * preserve_mask  # preserved bits = degrade_value
-    degrade_vec = degrade_value - degrade_vec  # preserved bits = 0, else degraded_value (flipped)
+def degrade_image_random(image, label=None,
+                         degrade_value=0,
+                         degrade_factor=0.5):
+  image_shape = image.shape.as_list()
+  image_size = np.prod(image_shape[1:])
 
-    image = tf.reshape(image, [-1, image_size])
-    degraded_image = tf.multiply(image, preserve_mask)  # use broadcast to element-wise multiply batch with 'preserved'
-    degraded_image = degraded_image + degrade_vec  # set non-preserved values to the 'degrade_value'
-    degraded_image = tf.reshape(degraded_image, image_shape, name='degraded_image')
+  preserve_mask = np.ones(image_size)
+  preserve_mask[:int(degrade_factor * image_size)] = 0
+  preserve_mask = tf.convert_to_tensor(preserve_mask, dtype=tf.float32)
+  preserve_mask = tf.random_shuffle(preserve_mask)
+
+  degrade_vec = np.ones(image_size)
+  degrade_vec[:] = degrade_value
+  degrade_vec = tf.convert_to_tensor(degrade_vec, dtype=tf.float32)
+  degrade_vec = degrade_vec * preserve_mask  # preserved bits = degrade_value
+  degrade_vec = degrade_value - degrade_vec  # preserved bits = 0, else degraded_value (flipped)
+
+  image = tf.reshape(image, [-1, image_size])
+  degraded_image = tf.multiply(image, preserve_mask)  # use broadcast to element-wise multiply batch with 'preserved'
+  degraded_image = degraded_image + degrade_vec  # set non-preserved values to the 'degrade_value'
+  degraded_image = tf.reshape(degraded_image, image_shape, name='degraded_image')
 
   if label is None:
     return degraded_image
@@ -129,11 +228,10 @@ def add_image_noise_flat(image, label=None, minval=0., noise_type='sp_binary', n
 
 
 def add_image_noise(image, label=None, minval=0., noise_type='sp_binary', noise_factor=0.2):
-  """Add image noise."""
   image_shape = image.shape.as_list()
   image_size = np.prod(image_shape[1:])
 
-  if noise_type in ['sp_float', 'sp_binary']:
+  if noise_type == 'sp_float' or noise_type == 'sp_binary':
     noise_mask = np.zeros(image_size)
     noise_mask[:int(noise_factor * image_size)] = 1
     noise_mask = tf.convert_to_tensor(noise_mask, dtype=tf.float32)
@@ -145,12 +243,13 @@ def add_image_noise(image, label=None, minval=0., noise_type='sp_binary', noise_
       noise_image = tf.sign(noise_image)
     noise_image = tf.multiply(noise_image, noise_mask)  # retain noise in positions of noise mask
 
-    image = tf.multiply(image, (1-noise_mask))  # zero out noise positions
-    corrupted_image = image + noise_image       # add in the noise
+    image = tf.multiply(image, (1 - noise_mask))  # zero out noise positions
+    corrupted_image = image + noise_image  # add in the noise
   else:
     if noise_type == 'none':
       raise RuntimeWarning("Add noise has been called despite noise_type of 'none'.")
-    raise NotImplementedError("The noise_type '{0}' is not supported.".format(noise_type))
+    else:
+      raise NotImplementedError("The noise_type '{0}' is not supported.".format(noise_type))
 
   if label is None:
     return corrupted_image
@@ -166,7 +265,6 @@ def add_image_salt_noise_flat(image, label=None, noise_val=0., noise_factor=0., 
   image = tf.reshape(image, (-1, image_shape[1]))
   return image
 
-
 def add_image_salt_pepper_noise_flat(image, label=None, salt_val=1., pepper_val=0., noise_factor=0.):
   """If the image is flat (batch, size) then use this version. It reshapes and calls the add_image_noise()"""
   image_shape = image.shape.as_list()
@@ -175,7 +273,6 @@ def add_image_salt_pepper_noise_flat(image, label=None, salt_val=1., pepper_val=
   image = add_image_salt_noise(image, label, pepper_val, noise_factor, 'replace')
   image = tf.reshape(image, (-1, image_shape[1]))
   return image
-
 
 def add_image_salt_noise(image, label=None, noise_val=0., noise_factor=0., mode='add'):
   """ Add salt noise.
@@ -207,15 +304,6 @@ def add_image_salt_noise(image, label=None, noise_val=0., noise_factor=0., mode=
     return image
 
   return image, label
-
-
-def add_image_noise_flat(image, label=None, minval=0., noise_type='sp_binary', noise_factor=0.2):
-  """If the image is flat (batch, size) then use this version. It reshapes and calls the add_imagie_noise()"""
-  image_shape = image.shape.as_list()
-  image = tf.reshape(image, (-1, image_shape[1], 1, 1))
-  image = add_image_noise(image, label, minval, noise_type, noise_factor)
-  image = tf.reshape(image, (-1, image_shape[1]))
-  return image
 
 
 def pad_image(image, padding, mode='constant'):

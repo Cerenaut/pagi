@@ -39,6 +39,11 @@ class CompositeWorkflow(Workflow):
       name = self._component.name + '/' + key
       batch_types[name] = 'training'
 
+    # Add batch type for composite component itself
+    batch_types.update({
+        self._component.name + '/' + self._component.name: 'training'
+    })
+
     if self._checkpoint_opts['checkpoint_frozen_scope']:
       for key in self._checkpoint_opts['checkpoint_frozen_scope'].split(','):
         key = key.lstrip().rstrip()
@@ -141,12 +146,11 @@ class CompositeWorkflow(Workflow):
           batch_type_pl: batch_type
       })
 
-      secondary_decoding_fetches = {}
-      sub_component.add_fetches(secondary_decoding_fetches, batch_type)
+      secondary_decoding_fetches = {
+          'decoding': dual.get_op('decoding')
+      }
       secondary_decoding_fetched = self._session.run(secondary_decoding_fetches, feed_dict=secondary_decoding_feed_dict)
-      sub_component.set_fetches(secondary_decoding_fetched, batch_type)
-
-      encoding = dual.get_values('decoding')
+      encoding = secondary_decoding_fetched['decoding']
 
       # Summaries
       if summarise:
