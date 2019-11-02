@@ -47,7 +47,7 @@ def tf_get_kernel_initializer(init_type=tf_init_type_none, initial_sd=None):
     return tf.contrib.layers.variance_scaling_initializer(factor=init_factor, mode=init_mode, uniform=False)
   elif init_type == tf_init_type_glorot_uniform:
     # uniform distribution within [-limit, limit] where limit is sqrt(6 / (fan_in + fan_out))
-    return tf.compat.v1.initializers.glorot_uniform()  # Aka xavier...!
+    return tf.glorot_uniform_initializer()  # Aka xavier...!
   elif init_type == tf_init_type_truncated_normal:
     kernel_initializer = tf.truncated_normal_initializer(stddev=initial_sd)
     return kernel_initializer
