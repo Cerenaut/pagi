@@ -19,6 +19,12 @@ import numpy as np
 import tensorflow as tf
 
 
+def tf_mish(inputs):
+  """Self-regularizing nonlinearity."""
+  # See explanation at: https://github.com/digantamisra98/Mish
+  # Impl. copied from: https://github.com/digantamisra98/Mish/blob/master/Mish/TFKeras/mish.py
+  return inputs * tf.math.tanh(tf.math.softplus(inputs))
+
 def type_activation_fn(fn_type):
   """Simple switcher for choosing activation functions."""
   if fn_type == 'none':
@@ -35,6 +41,8 @@ def type_activation_fn(fn_type):
     fn = tf.nn.softmax
   elif fn_type == 'logistic':
     fn = tf.logistic
+  elif fn_type == 'mish':
+    fn = tf_mish
   else:
     raise NotImplementedError(
         'Activation function implemented: ' + str(fn_type))
