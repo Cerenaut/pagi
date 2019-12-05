@@ -32,7 +32,8 @@ install_requires = [
     'wrapt',
     'click',
     'PyYAML <=3.13, >=3.10',
-    'pre-commit'
+    'pre-commit',
+    'python-dateutil == 2.8.0'
 ]
 
 setup_requires = []
