@@ -31,6 +31,7 @@ install_requires = [
     'scikit-image',
     'wrapt',
     'click',
+    'PyYAML <=3.13, >=3.10',
     'pre-commit',
     'python-dateutil == 2.8.0'
 ]
