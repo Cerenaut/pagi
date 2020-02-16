@@ -23,7 +23,7 @@ from setuptools.dist import Distribution
 install_requires = [
     'six >= 1.10.0',
     'numpy == 1.14.5',
-    'scipy == 1.0.0',
+    'scipy == 1.1.0',
     'scikit-learn == 0.19.1',
     'h5py == 2.8.0',
     'mlflow == 0.2.1',
@@ -32,7 +32,8 @@ install_requires = [
     'wrapt',
     'click',
     'PyYAML <=3.13, >=3.10',
-    'pre-commit'
+    'pre-commit',
+    'python-dateutil == 2.8.0'
 ]
 
 setup_requires = []
