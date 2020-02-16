@@ -37,6 +37,10 @@ from pagi.classifier.harness import Harness
 class Workflow:
   """The base workflow for working with components."""
 
+  phase_train = 'train'
+  phase_validate = 'validate'
+  phase_evaluate = 'evaluate'
+
   @staticmethod
   def default_opts():
     """Builds an HParam object with default workflow options."""
@@ -189,13 +193,13 @@ class Workflow:
         self._dataset_iterators = {}
 
         with tf.variable_scope('train_dataset'):
-          self._dataset_iterators['training'] = train_dataset.make_initializable_iterator()
+          self._dataset_iterators[self.phase_train] = train_dataset.make_initializable_iterator()
 
         with tf.variable_scope('eval_train_dataset'):
-          self._dataset_iterators['eval_train'] = eval_train_dataset.make_initializable_iterator()
+          self._dataset_iterators[self.phase_validate] = eval_train_dataset.make_initializable_iterator()
 
         with tf.variable_scope('eval_test_dataset'):
-          self._dataset_iterators['eval_test'] = eval_test_dataset.make_initializable_iterator()
+          self._dataset_iterators[self.phase_evaluate] = eval_test_dataset.make_initializable_iterator()
 
   def _setup_component(self):
     """Setup the component"""
@@ -361,8 +365,8 @@ class Workflow:
 
     if train:
       # TODO: The training handle needs to move into the training() method
-      training_handle = self._session.run(self._dataset_iterators['training'].string_handle())
-      self._session.run(self._dataset_iterators['training'].initializer)
+      training_handle = self._session.run(self._dataset_iterators[self.phase_train].string_handle())
+      self._session.run(self._dataset_iterators[self.phase_train].initializer)
 
       self._on_before_training_batches()
 
