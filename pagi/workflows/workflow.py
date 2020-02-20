@@ -474,8 +474,9 @@ class Workflow:
     try:
       self._component.write_filters(session, self._summary_dir)
     except AttributeError as e:
-      logging.warning('Failed to export filters.')
-      logging.debug(e)
+      pass
+      #logging.warning('Failed to export filters.')
+      #logging.debug(e)
 
   def step_graph(self, component, feed_dict, batch_type, fetches=None, is_update_feed_dict=True):
     """Encapsulate the stuff you need to do before and after a graph step: feed dict and fetches"""
