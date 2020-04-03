@@ -75,6 +75,9 @@ class Dataset:
     return self._num_test_classes
 
   def _calculate_epoch(self, dataset_size, batch_size, current_batch):
+    #print('calc epoch', dataset_size, batch_size, current_batch)
+    if dataset_size == 0:
+      return 0
     return int((current_batch * batch_size) // dataset_size)
 
   def get_training_epoch(self, batch_size, batch):

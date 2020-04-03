@@ -361,6 +361,7 @@ class Workflow:
     self._setup_profiler()
 
     global_step = 0
+    training_step = 0
     phase_change = True
 
     if train:
@@ -371,9 +372,13 @@ class Workflow:
       self._on_before_training_batches()
 
       for batch in range(self._last_step, num_batches):
-        training_step = self._session.run(tf.train.get_global_step(self._session.graph))
+        #training_step = self._session.run(tf.train.get_global_step(self._session.graph))
+        #training_epoch = self._dataset.get_training_epoch(self._hparams.batch_size, training_step)
+        #global_step = batch
+
+        global_step = self._session.run(tf.train.get_global_step(self._session.graph))  # This is a bit of a murky concept in composite algos
+        training_step = batch
         training_epoch = self._dataset.get_training_epoch(self._hparams.batch_size, training_step)
-        global_step = batch
 
         # Perform the training, and retrieve feed_dict for evaluation phase
         self.training_step(training_handle, batch, phase_change)
@@ -394,7 +399,7 @@ class Workflow:
         # evaluation: every N steps, test the encoding model
         if validate:
           if (batch + 1) % self._eval_opts['interval_batches'] == 0:  # defaults to once per batches
-            self.helper_validate(global_step)
+            self.helper_validate(training_step)
             phase_change = True
 
       logging.info('Training & optional evaluation complete.')
@@ -402,7 +407,7 @@ class Workflow:
       self._run_profiler()
 
     if evaluate:
-      self.helper_evaluate(global_step)
+      self.helper_evaluate(training_step)
 
   def session_run(self, fetches, feed_dict):
     if self.do_profile():

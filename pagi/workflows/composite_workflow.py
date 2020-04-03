@@ -32,6 +32,7 @@ class CompositeWorkflow(Workflow):
   """The base workflow for working with composite components."""
 
   def _setup_train_batch_types(self):
+    """Creates a batch_types dict for each subcomponent. By default training, but encoding if the subcomponent is frozen"""
     sub_components = self._component.get_sub_components()
 
     batch_types = {}

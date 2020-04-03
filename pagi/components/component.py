@@ -22,6 +22,9 @@ from __future__ import print_function
 class Component:
   """A basic interface for a graph-component that can be executed as a learning algorithm."""
 
+  BATCH_TYPE_TRAINING = 'training'  # modifies model, learning
+  BATCH_TYPE_ENCODING = 'encoding'  # aka inference. Used for valiation or evaluation phases
+
   @staticmethod
   def default_hparams():
     return tf.contrib.training.HParams()

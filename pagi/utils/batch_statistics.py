@@ -34,7 +34,7 @@ class BatchStatistics:
       for _, s in self._statistics.items():
         s.reset()
     else:
-      s = self.get_statistic(key)
+      s = self.lazy_get_statistic(key)
       s.reset()
 
   def lazy_get_statistic(self, key):
@@ -47,6 +47,8 @@ class BatchStatistics:
     return s
 
   def update(self, key, sum_values, count_values):
+    if sum_values is None:
+      return
     s = self.lazy_get_statistic(key)
     s.update(sum_values, count_values)
 
@@ -87,7 +89,9 @@ class BatchStatistic:
 
   def get_mean(self):
     if self.count == 0:
-      return float('NaN')
+      #return float('NaN')
+      return None
     mean = self.sum / self.count
+    #print('sum', self.sum, 'count', self.count, 'mean', mean)
     return mean
 
