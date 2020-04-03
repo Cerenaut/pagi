@@ -23,7 +23,7 @@ def tf_mish(inputs):
   """Self-regularizing nonlinearity."""
   # See explanation at: https://github.com/digantamisra98/Mish
   # Impl. copied from: https://github.com/digantamisra98/Mish/blob/master/Mish/TFKeras/mish.py
-  return inputs * tf.math.tanh(tf.math.softplus(inputs))
+  return inputs * tf.tanh(tf.math.softplus(inputs))
 
 def type_activation_fn(fn_type):
   """Simple switcher for choosing activation functions."""
