@@ -97,6 +97,7 @@ class Workflow:
 
     # Get the model's default HParams
     self._hparams = self._component_type.default_hparams()
+    self.num_training_batches = 0
 
     # Override HParams from dict
     if self._hparams_override:
@@ -358,6 +359,7 @@ class Workflow:
     """Run Experiment"""
     validate = True  # This needs to be sorted somehow - where does this get called from?
 
+    self.num_training_batches = num_batches
     self._setup_profiler()
 
     global_step = 0
