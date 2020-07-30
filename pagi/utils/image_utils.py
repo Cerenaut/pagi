@@ -91,7 +91,7 @@ def degrade_image_shape(image, label=None,
   ys = tf.random_uniform(shape=[batch_size, 1], minval=r, maxval=height-r, dtype=tf.int64)
 
   int_image = tf.range(0, image_size)
-  col = int_image % width  # same shape as image tensor, but values are the col idx
+  col = tf.to_int64(int_image % width)  # same shape as image tensor, but values are the col idx
   row = tf.to_int64(int_image / height)  # same but for row idx
 
   col = tf.expand_dims(col, axis=0)   # add a batch dimension
