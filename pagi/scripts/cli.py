@@ -31,6 +31,9 @@ from pagi.utils import logger_utils
 from pagi.utils import generic_utils as util
 from pagi.utils.tb_debug import TbDebug
 
+# constants for handling exit code for windows (not covered by os module)
+PAGI_CLI_WINDOWS_OS_NAME ='nt'
+PAGI_CLI_WINDOWS_EX_OK = 0
 
 @click.group()
 @click.version_option()
@@ -120,6 +123,10 @@ def run(dataset, workflow, component, dataset_location, hparams_override, hparam
       _run_experiment(flags, exp_config)
   else:
     _run_experiment(flags, exp_config)
+
+  # EX_OK not defined for windows
+  if os.name == PAGI_CLI_WINDOWS_OS_NAME:
+    os._exit(PAGI_CLI_WINDOWS_EX_OK)
 
   os._exit(os.EX_OK)  # pylint: disable=protected-access
 
