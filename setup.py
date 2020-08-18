@@ -28,7 +28,7 @@ install_requires = [
     'h5py == 2.8.0',
     'mlflow == 0.2.1',
     'matplotlib',
-    'scikit-image',
+    'scikit-image == 0.14.2',
     'wrapt',
     'click',
     'PyYAML <=3.13, >=3.10',
