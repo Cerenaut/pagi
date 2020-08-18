@@ -33,7 +33,8 @@ install_requires = [
     'click == 6.7',
     'PyYAML <=3.13, >=3.10',
     'pre-commit == 1.17.0',
-    'python-dateutil == 2.8.0'
+    'python-dateutil == 2.8.0',
+    'pandas == 0.22.0'
 ]
 
 setup_requires = []
