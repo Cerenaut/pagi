@@ -27,10 +27,10 @@ install_requires = [
     'scikit-learn == 0.19.1',
     'h5py == 2.8.0',
     'mlflow == 0.2.1',
-    'matplotlib',
+    'matplotlib == 2.1.2',
     'scikit-image == 0.14.2',
-    'wrapt',
-    'click',
+    'wrapt == 1.11.1',
+    'click == 6.7',
     'PyYAML <=3.13, >=3.10',
     'pre-commit == 1.17.0',
     'python-dateutil == 2.8.0'
