@@ -123,7 +123,7 @@ class Workflow:
     if self._summary_dir is None:
       self._summary_dir = util.get_summary_dir()
     logger_utils.log_param({'summary_dir': self._summary_dir})
-    self._writer = tf.summary.FileWriter(self._summary_dir, self._session.graph)
+    self._writer = tf.summary.FileWriter(self._summary_dir)
 
     # Write all parameters to disk
     with open(os.path.join(self._summary_dir, 'params.json'), 'w') as f:
