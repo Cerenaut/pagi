@@ -31,7 +31,7 @@ install_requires = [
     'scikit-image == 0.14.2',
     'wrapt == 1.11.1',
     'click == 6.7',
-    'PyYAML == 3.12',
+    'PyYAML == 5.4',
     'pre-commit == 1.17.0',
     'python-dateutil == 2.8.0',
     'pandas == 0.22.0'
