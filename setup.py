@@ -26,7 +26,7 @@ install_requires = [
     'scipy == 1.1.0',
     'scikit-learn == 0.19.1',
     'h5py == 2.8.0',
-    'mlflow == 0.2.1',
+    'mlflow == 1.23.1',
     'matplotlib == 2.1.2',
     'scikit-image == 0.14.2',
     'wrapt == 1.11.1',
