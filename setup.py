@@ -22,7 +22,7 @@ from setuptools.dist import Distribution
 
 install_requires = [
     'six >= 1.10.0',
-    'numpy == 1.14.5',
+    'numpy == 1.22.0',
     'scipy == 1.1.0',
     'scikit-learn == 0.19.1',
     'h5py == 2.8.0',
